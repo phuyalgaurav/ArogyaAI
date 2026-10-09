@@ -1,0 +1,335 @@
+{
+  "$defs": {
+    "ArogyaResponse": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "request_id": {
+          "minLength": 1,
+          "title": "Request Id",
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "answered",
+            "needs_clarification",
+            "needs_professional_review",
+            "urgent",
+            "unavailable"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "language": {
+          "enum": [
+            "en",
+            "ne",
+            "tam"
+          ],
+          "title": "Language",
+          "type": "string"
+        },
+        "answer": {
+          "title": "Answer",
+          "type": "string"
+        },
+        "evidence": {
+          "items": {
+            "$ref": "#/$defs/Evidence"
+          },
+          "title": "Evidence",
+          "type": "array"
+        },
+        "safety": {
+          "$ref": "#/$defs/Safety"
+        },
+        "provenance": {
+          "$ref": "#/$defs/Provenance"
+        }
+      },
+      "required": [
+        "request_id",
+        "status",
+        "language",
+        "answer",
+        "evidence",
+        "safety",
+        "provenance"
+      ],
+      "title": "ArogyaResponse",
+      "type": "object"
+    },
+    "Evidence": {
+      "additionalProperties": false,
+      "properties": {
+        "source_id": {
+          "minLength": 1,
+          "title": "Source Id",
+          "type": "string"
+        },
+        "version": {
+          "minLength": 1,
+          "title": "Version",
+          "type": "string"
+        },
+        "section_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Section Id"
+        }
+      },
+      "required": [
+        "source_id",
+        "version"
+      ],
+      "title": "Evidence",
+      "type": "object"
+    },
+    "HistoryMessage": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[a-f0-9]{32}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "sender": {
+          "enum": [
+            "user",
+            "assistant"
+          ],
+          "title": "Sender",
+          "type": "string"
+        },
+        "text": {
+          "maxLength": 6000,
+          "minLength": 1,
+          "title": "Text",
+          "type": "string"
+        },
+        "timestamp": {
+          "format": "date-time",
+          "title": "Timestamp",
+          "type": "string"
+        },
+        "response": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ArogyaResponse"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "error": {
+          "anyOf": [
+            {
+              "maxLength": 6000,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Error"
+        }
+      },
+      "required": [
+        "id",
+        "sender",
+        "text",
+        "timestamp"
+      ],
+      "title": "HistoryMessage",
+      "type": "object"
+    },
+    "Provenance": {
+      "additionalProperties": false,
+      "properties": {
+        "mode": {
+          "enum": [
+            "local",
+            "server",
+            "static"
+          ],
+          "title": "Mode",
+          "type": "string"
+        },
+        "model": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Model"
+        },
+        "knowledge_version": {
+          "title": "Knowledge Version",
+          "type": "string"
+        },
+        "translator": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Translator"
+        },
+        "model_revision": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Model Revision"
+        },
+        "router": {
+          "default": "rules",
+          "title": "Router",
+          "type": "string"
+        },
+        "router_intent": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Router Intent"
+        },
+        "router_revision": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Router Revision"
+        },
+        "routing_disagreement": {
+          "default": false,
+          "title": "Routing Disagreement",
+          "type": "boolean"
+        },
+        "policy_version": {
+          "default": "education-extractive-2",
+          "title": "Policy Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "mode",
+        "model",
+        "knowledge_version"
+      ],
+      "title": "Provenance",
+      "type": "object"
+    },
+    "Safety": {
+      "additionalProperties": false,
+      "properties": {
+        "rule_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Rule Ids",
+          "type": "array"
+        },
+        "abstained": {
+          "title": "Abstained",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "rule_ids",
+        "abstained"
+      ],
+      "title": "Safety",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "pattern": "^[a-f0-9]{32}$",
+      "title": "Id",
+      "type": "string"
+    },
+    "title": {
+      "maxLength": 80,
+      "minLength": 1,
+      "title": "Title",
+      "type": "string"
+    },
+    "language": {
+      "enum": [
+        "en",
+        "ne",
+        "tam"
+      ],
+      "title": "Language",
+      "type": "string"
+    },
+    "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+    },
+    "updated_at": {
+      "format": "date-time",
+      "title": "Updated At",
+      "type": "string"
+    },
+    "messages": {
+      "items": {
+        "$ref": "#/$defs/HistoryMessage"
+      },
+      "maxItems": 100,
+      "minItems": 1,
+      "title": "Messages",
+      "type": "array"
+    }
+  },
+  "required": [
+    "id",
+    "title",
+    "language",
+    "created_at",
+    "updated_at",
+    "messages"
+  ],
+  "title": "HistoryConversation",
+  "type": "object"
+}

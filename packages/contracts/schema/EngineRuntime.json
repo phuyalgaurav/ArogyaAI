@@ -1,0 +1,111 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "enum": [
+        "qwen_selector",
+        "laya_router",
+        "translation",
+        "nepali_stt",
+        "nepali_tts",
+        "server_ocr",
+        "bonsai"
+      ],
+      "title": "Id",
+      "type": "string"
+    },
+    "name": {
+      "maxLength": 120,
+      "title": "Name",
+      "type": "string"
+    },
+    "task": {
+      "enum": [
+        "evidence_selection",
+        "intent_routing",
+        "translation",
+        "transcription",
+        "speech_synthesis",
+        "printed_text_recognition",
+        "document_vision"
+      ],
+      "title": "Task",
+      "type": "string"
+    },
+    "state": {
+      "enum": [
+        "unconfigured",
+        "unavailable",
+        "ready",
+        "busy"
+      ],
+      "title": "State",
+      "type": "string"
+    },
+    "revision": {
+      "anyOf": [
+        {
+          "maxLength": 74,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Revision"
+    },
+    "loaded": {
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Loaded"
+    },
+    "memory_bytes": {
+      "anyOf": [
+        {
+          "minimum": 0,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Memory Bytes"
+    },
+    "context_tokens": {
+      "anyOf": [
+        {
+          "minimum": 0,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Context Tokens"
+    },
+    "reason": {
+      "maxLength": 200,
+      "title": "Reason",
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "name",
+    "task",
+    "state",
+    "reason"
+  ],
+  "title": "EngineRuntime",
+  "type": "object"
+}

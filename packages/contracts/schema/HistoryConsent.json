@@ -1,0 +1,27 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "allow_server_storage": {
+      "const": true,
+      "title": "Allow Server Storage",
+      "type": "boolean"
+    },
+    "client_access_token": {
+      "pattern": "^history_[a-f0-9]{64}$",
+      "title": "Client Access Token",
+      "type": "string"
+    },
+    "retention_days": {
+      "const": 30,
+      "default": 30,
+      "title": "Retention Days",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "allow_server_storage",
+    "client_access_token"
+  ],
+  "title": "HistoryConsent",
+  "type": "object"
+}
