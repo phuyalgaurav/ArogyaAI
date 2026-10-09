@@ -1,0 +1,98 @@
+{
+  "$defs": {
+    "TranscriptionResult": {
+      "additionalProperties": false,
+      "properties": {
+        "text": {
+          "maxLength": 4000,
+          "minLength": 1,
+          "title": "Text",
+          "type": "string"
+        },
+        "language": {
+          "const": "ne",
+          "default": "ne",
+          "title": "Language",
+          "type": "string"
+        },
+        "status": {
+          "default": "draft",
+          "enum": [
+            "draft",
+            "needs_review"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "duration_seconds": {
+          "exclusiveMinimum": 0,
+          "maximum": 20,
+          "title": "Duration Seconds",
+          "type": "number"
+        },
+        "model": {
+          "title": "Model",
+          "type": "string"
+        },
+        "revision": {
+          "title": "Revision",
+          "type": "string"
+        },
+        "processor_model": {
+          "title": "Processor Model",
+          "type": "string"
+        },
+        "processor_revision": {
+          "title": "Processor Revision",
+          "type": "string"
+        }
+      },
+      "required": [
+        "text",
+        "duration_seconds",
+        "model",
+        "revision",
+        "processor_model",
+        "processor_revision"
+      ],
+      "title": "TranscriptionResult",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "conversation_id": {
+      "pattern": "^[a-f0-9]{32}$",
+      "title": "Conversation Id",
+      "type": "string"
+    },
+    "request_id": {
+      "maxLength": 100,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9_-]+$",
+      "title": "Request Id",
+      "type": "string"
+    },
+    "context_revision": {
+      "title": "Context Revision",
+      "type": "integer"
+    },
+    "transcription": {
+      "$ref": "#/$defs/TranscriptionResult"
+    },
+    "automatically_submitted": {
+      "const": false,
+      "default": false,
+      "title": "Automatically Submitted",
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "conversation_id",
+    "request_id",
+    "context_revision",
+    "transcription"
+  ],
+  "title": "ConversationTranscriptionResult",
+  "type": "object"
+}
