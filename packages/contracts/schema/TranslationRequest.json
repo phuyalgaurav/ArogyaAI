@@ -1,0 +1,51 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "text": {
+      "maxLength": 600,
+      "minLength": 1,
+      "title": "Text",
+      "type": "string"
+    },
+    "source_language": {
+      "enum": [
+        "en",
+        "ne",
+        "tam"
+      ],
+      "title": "Source Language",
+      "type": "string"
+    },
+    "target_language": {
+      "enum": [
+        "en",
+        "ne",
+        "tam"
+      ],
+      "title": "Target Language",
+      "type": "string"
+    },
+    "protected_terms": {
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 12,
+      "title": "Protected Terms",
+      "type": "array"
+    },
+    "consent_id": {
+      "maxLength": 100,
+      "minLength": 1,
+      "title": "Consent Id",
+      "type": "string"
+    }
+  },
+  "required": [
+    "text",
+    "source_language",
+    "target_language",
+    "consent_id"
+  ],
+  "title": "TranslationRequest",
+  "type": "object"
+}

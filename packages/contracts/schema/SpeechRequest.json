@@ -1,0 +1,38 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "text": {
+      "maxLength": 300,
+      "minLength": 1,
+      "title": "Text",
+      "type": "string"
+    },
+    "language": {
+      "const": "ne",
+      "default": "ne",
+      "title": "Language",
+      "type": "string"
+    },
+    "speaker": {
+      "default": "kala",
+      "enum": [
+        "kala",
+        "barsha"
+      ],
+      "title": "Speaker",
+      "type": "string"
+    },
+    "consent_id": {
+      "maxLength": 100,
+      "minLength": 1,
+      "title": "Consent Id",
+      "type": "string"
+    }
+  },
+  "required": [
+    "text",
+    "consent_id"
+  ],
+  "title": "SpeechRequest",
+  "type": "object"
+}

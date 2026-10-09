@@ -1,0 +1,73 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "text": {
+      "maxLength": 4000,
+      "minLength": 1,
+      "title": "Text",
+      "type": "string"
+    },
+    "original_text": {
+      "title": "Original Text",
+      "type": "string"
+    },
+    "source_language": {
+      "enum": [
+        "en",
+        "ne",
+        "tam"
+      ],
+      "title": "Source Language",
+      "type": "string"
+    },
+    "target_language": {
+      "enum": [
+        "en",
+        "ne",
+        "tam"
+      ],
+      "title": "Target Language",
+      "type": "string"
+    },
+    "status": {
+      "enum": [
+        "draft",
+        "needs_review"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "warnings": {
+      "items": {
+        "enum": [
+          "numbers_changed",
+          "protected_terms_changed",
+          "output_truncated"
+        ],
+        "type": "string"
+      },
+      "title": "Warnings",
+      "type": "array"
+    },
+    "model": {
+      "title": "Model",
+      "type": "string"
+    },
+    "revision": {
+      "title": "Revision",
+      "type": "string"
+    }
+  },
+  "required": [
+    "text",
+    "original_text",
+    "source_language",
+    "target_language",
+    "status",
+    "warnings",
+    "model",
+    "revision"
+  ],
+  "title": "TranslationResult",
+  "type": "object"
+}
