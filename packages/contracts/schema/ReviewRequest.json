@@ -1,0 +1,65 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "kind": {
+      "enum": [
+        "clinical",
+        "license"
+      ],
+      "title": "Kind",
+      "type": "string"
+    },
+    "decision": {
+      "enum": [
+        "approve",
+        "reject"
+      ],
+      "title": "Decision",
+      "type": "string"
+    },
+    "expected_hash": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Expected Hash",
+      "type": "string"
+    },
+    "reason": {
+      "maxLength": 1000,
+      "minLength": 10,
+      "title": "Reason",
+      "type": "string"
+    },
+    "license_evidence_url": {
+      "anyOf": [
+        {
+          "format": "uri",
+          "maxLength": 2083,
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "License Evidence Url"
+    },
+    "redistribution_allowed": {
+      "default": false,
+      "title": "Redistribution Allowed",
+      "type": "boolean"
+    },
+    "translation_allowed": {
+      "default": false,
+      "title": "Translation Allowed",
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "kind",
+    "decision",
+    "expected_hash",
+    "reason"
+  ],
+  "title": "ReviewRequest",
+  "type": "object"
+}

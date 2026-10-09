@@ -1,0 +1,79 @@
+{
+  "$defs": {
+    "QuestionCandidate": {
+      "additionalProperties": false,
+      "properties": {
+        "source_id": {
+          "title": "Source Id",
+          "type": "string"
+        },
+        "version": {
+          "title": "Version",
+          "type": "string"
+        },
+        "section_id": {
+          "title": "Section Id",
+          "type": "string"
+        },
+        "content_hash": {
+          "title": "Content Hash",
+          "type": "string"
+        }
+      },
+      "required": [
+        "source_id",
+        "version",
+        "section_id",
+        "content_hash"
+      ],
+      "title": "QuestionCandidate",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "question": {
+      "title": "Question",
+      "type": "string"
+    },
+    "language": {
+      "enum": [
+        "en",
+        "ne",
+        "tam"
+      ],
+      "title": "Language",
+      "type": "string"
+    },
+    "snapshot_hash": {
+      "title": "Snapshot Hash",
+      "type": "string"
+    },
+    "candidates": {
+      "items": {
+        "$ref": "#/$defs/QuestionCandidate"
+      },
+      "title": "Candidates",
+      "type": "array"
+    },
+    "selected": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/QuestionCandidate"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": [
+    "question",
+    "language",
+    "snapshot_hash",
+    "candidates",
+    "selected"
+  ],
+  "title": "QuestionConflict",
+  "type": "object"
+}
