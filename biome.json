@@ -1,0 +1,11 @@
+{
+  "vcs": { "enabled": true, "clientKind": "git", "useIgnoreFile": true },
+  "$schema": "https://biomejs.dev/schemas/2.5.15/schema.json",
+  "files": {
+    "includes": ["**", "!**/generated", "!**/next-env.d.ts", "!**/schema"]
+  },
+  "formatter": { "indentStyle": "space", "indentWidth": 2 },
+  "linter": { "rules": { "preset": "recommended" } },
+  "javascript": { "formatter": { "quoteStyle": "double" } },
+  "assist": { "actions": { "source": { "organizeImports": "on" } } }
+}
