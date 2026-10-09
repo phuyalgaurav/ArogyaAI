@@ -1,0 +1,89 @@
+{
+  "$defs": {
+    "ConversationSummary": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[a-f0-9]{32}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "mode": {
+          "enum": [
+            "document",
+            "medicine",
+            "health"
+          ],
+          "title": "Mode",
+          "type": "string"
+        },
+        "title": {
+          "title": "Title",
+          "type": "string"
+        },
+        "updated_at": {
+          "format": "date-time",
+          "title": "Updated At",
+          "type": "string"
+        },
+        "storage": {
+          "enum": [
+            "session",
+            "server_history"
+          ],
+          "title": "Storage",
+          "type": "string"
+        },
+        "turn_count": {
+          "title": "Turn Count",
+          "type": "integer"
+        },
+        "preview": {
+          "title": "Preview",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "mode",
+        "title",
+        "updated_at",
+        "storage",
+        "turn_count",
+        "preview"
+      ],
+      "title": "ConversationSummary",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "conversations": {
+      "items": {
+        "$ref": "#/$defs/ConversationSummary"
+      },
+      "title": "Conversations",
+      "type": "array"
+    },
+    "total": {
+      "title": "Total",
+      "type": "integer"
+    },
+    "offset": {
+      "title": "Offset",
+      "type": "integer"
+    },
+    "limit": {
+      "title": "Limit",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "conversations",
+    "total",
+    "offset",
+    "limit"
+  ],
+  "title": "ConversationIndex",
+  "type": "object"
+}

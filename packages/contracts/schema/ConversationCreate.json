@@ -1,0 +1,62 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "anyOf": [
+        {
+          "pattern": "^[a-f0-9]{32}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Id"
+    },
+    "mode": {
+      "enum": [
+        "document",
+        "medicine",
+        "health"
+      ],
+      "title": "Mode",
+      "type": "string"
+    },
+    "language": {
+      "default": "en",
+      "enum": [
+        "en",
+        "ne"
+      ],
+      "title": "Language",
+      "type": "string"
+    },
+    "title": {
+      "default": "New conversation",
+      "maxLength": 80,
+      "minLength": 1,
+      "title": "Title",
+      "type": "string"
+    },
+    "storage": {
+      "default": "session",
+      "enum": [
+        "session",
+        "server_history"
+      ],
+      "title": "Storage",
+      "type": "string"
+    },
+    "allow_context_storage": {
+      "default": false,
+      "title": "Allow Context Storage",
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "mode"
+  ],
+  "title": "ConversationCreate",
+  "type": "object"
+}

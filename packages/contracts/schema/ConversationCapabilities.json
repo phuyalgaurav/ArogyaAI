@@ -1,0 +1,97 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": 1,
+      "default": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "modes": {
+      "default": [
+        "document",
+        "medicine",
+        "health"
+      ],
+      "items": {
+        "type": "string"
+      },
+      "title": "Modes",
+      "type": "array"
+    },
+    "processing": {
+      "const": "server",
+      "default": "server",
+      "title": "Processing",
+      "type": "string"
+    },
+    "original_retention": {
+      "const": false,
+      "default": false,
+      "title": "Original Retention",
+      "type": "boolean"
+    },
+    "session_storage": {
+      "const": "memory_until_session_expiry",
+      "default": "memory_until_session_expiry",
+      "title": "Session Storage",
+      "type": "string"
+    },
+    "history_retention_days": {
+      "const": 30,
+      "default": 30,
+      "title": "History Retention Days",
+      "type": "integer"
+    },
+    "image_formats": {
+      "default": [
+        "JPEG",
+        "PNG",
+        "WebP"
+      ],
+      "items": {
+        "type": "string"
+      },
+      "title": "Image Formats",
+      "type": "array"
+    },
+    "maximum_attachments": {
+      "const": 8,
+      "default": 8,
+      "title": "Maximum Attachments",
+      "type": "integer"
+    },
+    "maximum_turns": {
+      "const": 50,
+      "default": 50,
+      "title": "Maximum Turns",
+      "type": "integer"
+    },
+    "text_streaming": {
+      "const": false,
+      "default": false,
+      "title": "Text Streaming",
+      "type": "boolean"
+    },
+    "stt_transport": {
+      "const": "whole_clip",
+      "default": "whole_clip",
+      "title": "Stt Transport",
+      "type": "string"
+    },
+    "tts_transport": {
+      "const": "ordered_chunks",
+      "default": "ordered_chunks",
+      "title": "Tts Transport",
+      "type": "string"
+    },
+    "local_inference": {
+      "const": false,
+      "default": false,
+      "title": "Local Inference",
+      "type": "boolean"
+    }
+  },
+  "title": "ConversationCapabilities",
+  "type": "object"
+}

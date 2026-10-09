@@ -1,0 +1,21 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "expected_context_revision": {
+      "minimum": 0,
+      "title": "Expected Context Revision",
+      "type": "integer"
+    },
+    "attachment_id": {
+      "pattern": "^[a-f0-9]{32}$",
+      "title": "Attachment Id",
+      "type": "string"
+    }
+  },
+  "required": [
+    "expected_context_revision",
+    "attachment_id"
+  ],
+  "title": "ConversationFocus",
+  "type": "object"
+}
