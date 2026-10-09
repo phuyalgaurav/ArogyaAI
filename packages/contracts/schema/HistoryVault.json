@@ -1,0 +1,26 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "access_token": {
+      "title": "Access Token",
+      "type": "string"
+    },
+    "expires_at": {
+      "format": "date-time",
+      "title": "Expires At",
+      "type": "string"
+    },
+    "retention_days": {
+      "const": 30,
+      "default": 30,
+      "title": "Retention Days",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "access_token",
+    "expires_at"
+  ],
+  "title": "HistoryVault",
+  "type": "object"
+}
