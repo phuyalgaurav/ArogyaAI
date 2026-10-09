@@ -1,0 +1,297 @@
+{
+  "$defs": {
+    "ImageReadResult": {
+      "additionalProperties": false,
+      "properties": {
+        "text": {
+          "maxLength": 30000,
+          "title": "Text",
+          "type": "string"
+        },
+        "language": {
+          "enum": [
+            "eng",
+            "nep",
+            "eng+nep"
+          ],
+          "title": "Language",
+          "type": "string"
+        },
+        "status": {
+          "const": "unverified",
+          "default": "unverified",
+          "title": "Status",
+          "type": "string"
+        },
+        "engine": {
+          "maxLength": 120,
+          "title": "Engine",
+          "type": "string"
+        },
+        "revision": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Revision",
+          "type": "string"
+        },
+        "method": {
+          "anyOf": [
+            {
+              "enum": [
+                "vision",
+                "printed_ocr"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Method"
+        },
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 8,
+          "title": "Warnings",
+          "type": "array"
+        }
+      },
+      "required": [
+        "text",
+        "language",
+        "engine",
+        "revision"
+      ],
+      "title": "ImageReadResult",
+      "type": "object"
+    },
+    "MedicineRecord": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "maxLength": 100,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "canonical_name": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Canonical Name",
+          "type": "string"
+        },
+        "active_ingredients": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 20,
+          "minItems": 1,
+          "title": "Active Ingredients",
+          "type": "array"
+        },
+        "aliases": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 50,
+          "title": "Aliases",
+          "type": "array"
+        },
+        "jurisdiction": {
+          "maxLength": 100,
+          "minLength": 1,
+          "title": "Jurisdiction",
+          "type": "string"
+        },
+        "source_ids": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 10,
+          "minItems": 1,
+          "title": "Source Ids",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "canonical_name",
+        "active_ingredients",
+        "aliases",
+        "jurisdiction",
+        "source_ids"
+      ],
+      "title": "MedicineRecord",
+      "type": "object"
+    },
+    "ReviewedContextRevision": {
+      "additionalProperties": false,
+      "properties": {
+        "revision": {
+          "minimum": 1,
+          "title": "Revision",
+          "type": "integer"
+        },
+        "context_revision": {
+          "minimum": 1,
+          "title": "Context Revision",
+          "type": "integer"
+        },
+        "reviewed_at": {
+          "format": "date-time",
+          "title": "Reviewed At",
+          "type": "string"
+        },
+        "text": {
+          "maxLength": 8000,
+          "minLength": 1,
+          "title": "Text",
+          "type": "string"
+        },
+        "selected_medicine_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Selected Medicine Id"
+        }
+      },
+      "required": [
+        "revision",
+        "context_revision",
+        "reviewed_at",
+        "text"
+      ],
+      "title": "ReviewedContextRevision",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "pattern": "^[a-f0-9]{32}$",
+      "title": "Id",
+      "type": "string"
+    },
+    "request_id": {
+      "maxLength": 100,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9_-]+$",
+      "title": "Request Id",
+      "type": "string"
+    },
+    "request_fingerprint": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Request Fingerprint",
+      "type": "string"
+    },
+    "kind": {
+      "enum": [
+        "prescription",
+        "doctor_note",
+        "report",
+        "medicine"
+      ],
+      "title": "Kind",
+      "type": "string"
+    },
+    "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+    },
+    "original_available": {
+      "const": false,
+      "default": false,
+      "title": "Original Available",
+      "type": "boolean"
+    },
+    "original_text": {
+      "maxLength": 30000,
+      "title": "Original Text",
+      "type": "string"
+    },
+    "reviewed_text": {
+      "anyOf": [
+        {
+          "maxLength": 8000,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Reviewed Text"
+    },
+    "reviewed_revision": {
+      "default": 0,
+      "minimum": 0,
+      "title": "Reviewed Revision",
+      "type": "integer"
+    },
+    "review_history": {
+      "items": {
+        "$ref": "#/$defs/ReviewedContextRevision"
+      },
+      "maxItems": 20,
+      "title": "Review History",
+      "type": "array"
+    },
+    "recognition": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ImageReadResult"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "medicine_candidates": {
+      "items": {
+        "$ref": "#/$defs/MedicineRecord"
+      },
+      "maxItems": 20,
+      "title": "Medicine Candidates",
+      "type": "array"
+    },
+    "observed_strengths": {
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 20,
+      "title": "Observed Strengths",
+      "type": "array"
+    },
+    "selected_medicine": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/MedicineRecord"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    }
+  },
+  "required": [
+    "id",
+    "request_id",
+    "request_fingerprint",
+    "kind",
+    "created_at",
+    "original_text"
+  ],
+  "title": "ConversationAttachment",
+  "type": "object"
+}
