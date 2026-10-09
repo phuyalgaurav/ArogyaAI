@@ -1,0 +1,283 @@
+{
+  "$defs": {
+    "KnowledgeSection": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "maxLength": 100,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "kind": {
+          "default": "education",
+          "enum": [
+            "education",
+            "warning",
+            "dosing"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "task": {
+          "default": "education",
+          "enum": [
+            "education",
+            "medicine_info"
+          ],
+          "title": "Task",
+          "type": "string"
+        },
+        "questions": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 20,
+          "title": "Questions",
+          "type": "array"
+        },
+        "sentences": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 20,
+          "minItems": 1,
+          "title": "Sentences",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "sentences"
+      ],
+      "title": "KnowledgeSection",
+      "type": "object"
+    },
+    "KnowledgeSource": {
+      "additionalProperties": false,
+      "properties": {
+        "source_id": {
+          "maxLength": 100,
+          "minLength": 1,
+          "title": "Source Id",
+          "type": "string"
+        },
+        "title": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Title",
+          "type": "string"
+        },
+        "version": {
+          "maxLength": 100,
+          "minLength": 1,
+          "title": "Version",
+          "type": "string"
+        },
+        "language": {
+          "enum": [
+            "en",
+            "ne",
+            "tam"
+          ],
+          "title": "Language",
+          "type": "string"
+        },
+        "source_url": {
+          "format": "uri",
+          "maxLength": 2083,
+          "minLength": 1,
+          "title": "Source Url",
+          "type": "string"
+        },
+        "license": {
+          "maxLength": 500,
+          "minLength": 1,
+          "title": "License",
+          "type": "string"
+        },
+        "review_status": {
+          "enum": [
+            "pending",
+            "approved",
+            "withdrawn",
+            "test_fixture"
+          ],
+          "title": "Review Status",
+          "type": "string"
+        },
+        "reviewed_by": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reviewed By"
+        },
+        "reviewed_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reviewed At"
+        },
+        "valid_until": {
+          "format": "date-time",
+          "title": "Valid Until",
+          "type": "string"
+        },
+        "sections": {
+          "items": {
+            "$ref": "#/$defs/KnowledgeSection"
+          },
+          "maxItems": 30,
+          "minItems": 1,
+          "title": "Sections",
+          "type": "array"
+        }
+      },
+      "required": [
+        "source_id",
+        "title",
+        "version",
+        "language",
+        "source_url",
+        "license",
+        "review_status",
+        "valid_until",
+        "sections"
+      ],
+      "title": "KnowledgeSource",
+      "type": "object"
+    },
+    "SourceReview": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "enum": [
+            "clinical",
+            "license"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "decision": {
+          "enum": [
+            "approve",
+            "reject"
+          ],
+          "title": "Decision",
+          "type": "string"
+        },
+        "actor_id": {
+          "title": "Actor Id",
+          "type": "string"
+        },
+        "recorded_at": {
+          "format": "date-time",
+          "title": "Recorded At",
+          "type": "string"
+        },
+        "content_hash": {
+          "title": "Content Hash",
+          "type": "string"
+        },
+        "reason": {
+          "title": "Reason",
+          "type": "string"
+        },
+        "license_evidence_url": {
+          "anyOf": [
+            {
+              "format": "uri",
+              "maxLength": 2083,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "License Evidence Url"
+        },
+        "redistribution_allowed": {
+          "default": false,
+          "title": "Redistribution Allowed",
+          "type": "boolean"
+        },
+        "translation_allowed": {
+          "default": false,
+          "title": "Translation Allowed",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "kind",
+        "decision",
+        "actor_id",
+        "recorded_at",
+        "content_hash",
+        "reason"
+      ],
+      "title": "SourceReview",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "source": {
+      "$ref": "#/$defs/KnowledgeSource"
+    },
+    "content_hash": {
+      "title": "Content Hash",
+      "type": "string"
+    },
+    "state": {
+      "enum": [
+        "pending",
+        "active",
+        "retired",
+        "withdrawn"
+      ],
+      "title": "State",
+      "type": "string"
+    },
+    "submitted_by": {
+      "title": "Submitted By",
+      "type": "string"
+    },
+    "submitted_at": {
+      "format": "date-time",
+      "title": "Submitted At",
+      "type": "string"
+    },
+    "reviews": {
+      "items": {
+        "$ref": "#/$defs/SourceReview"
+      },
+      "title": "Reviews",
+      "type": "array"
+    }
+  },
+  "required": [
+    "source",
+    "content_hash",
+    "state",
+    "submitted_by",
+    "submitted_at",
+    "reviews"
+  ],
+  "title": "SourceRevision",
+  "type": "object"
+}

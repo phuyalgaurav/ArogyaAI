@@ -1,0 +1,140 @@
+{
+  "$defs": {
+    "KnowledgeSection": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "maxLength": 100,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "kind": {
+          "default": "education",
+          "enum": [
+            "education",
+            "warning",
+            "dosing"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "task": {
+          "default": "education",
+          "enum": [
+            "education",
+            "medicine_info"
+          ],
+          "title": "Task",
+          "type": "string"
+        },
+        "questions": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 20,
+          "title": "Questions",
+          "type": "array"
+        },
+        "sentences": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 20,
+          "minItems": 1,
+          "title": "Sentences",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "sentences"
+      ],
+      "title": "KnowledgeSection",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "source_id": {
+      "pattern": "^[A-Za-z0-9_.-]{1,100}$",
+      "title": "Source Id",
+      "type": "string"
+    },
+    "title": {
+      "maxLength": 200,
+      "minLength": 1,
+      "title": "Title",
+      "type": "string"
+    },
+    "version": {
+      "pattern": "^[A-Za-z0-9_.-]{1,100}$",
+      "title": "Version",
+      "type": "string"
+    },
+    "language": {
+      "enum": [
+        "en",
+        "ne",
+        "tam"
+      ],
+      "title": "Language",
+      "type": "string"
+    },
+    "source_url": {
+      "format": "uri",
+      "maxLength": 2083,
+      "minLength": 1,
+      "title": "Source Url",
+      "type": "string"
+    },
+    "license": {
+      "maxLength": 500,
+      "minLength": 1,
+      "title": "License",
+      "type": "string"
+    },
+    "review_status": {
+      "const": "pending",
+      "default": "pending",
+      "title": "Review Status",
+      "type": "string"
+    },
+    "reviewed_by": {
+      "default": null,
+      "title": "Reviewed By",
+      "type": "null"
+    },
+    "reviewed_at": {
+      "default": null,
+      "title": "Reviewed At",
+      "type": "null"
+    },
+    "valid_until": {
+      "format": "date-time",
+      "title": "Valid Until",
+      "type": "string"
+    },
+    "sections": {
+      "items": {
+        "$ref": "#/$defs/KnowledgeSection"
+      },
+      "maxItems": 30,
+      "minItems": 1,
+      "title": "Sections",
+      "type": "array"
+    }
+  },
+  "required": [
+    "source_id",
+    "title",
+    "version",
+    "language",
+    "source_url",
+    "license",
+    "valid_until",
+    "sections"
+  ],
+  "title": "SourceDraft",
+  "type": "object"
+}
