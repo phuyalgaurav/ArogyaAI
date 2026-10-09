@@ -1,0 +1,357 @@
+/* Shared task typography and controls. Loaded after feature styles. */
+body {
+  font-family: "Noto Sans Devanagari", Arial, sans-serif;
+  color: #1f2d27;
+}
+.workspace-main {
+  min-width: 0;
+}
+.workspace-shell h1,
+.workspace-shell .workspace-heading h1,
+.workspace-shell .dashboard-header h1,
+.workspace-shell .medicine-header h1,
+.workspace-shell .chat-header h1 {
+  font-family: inherit;
+  font-size: clamp(1.5rem, 3vw, 2.1rem);
+  font-weight: 650;
+  line-height: 1.4;
+  letter-spacing: -0.025em;
+  margin: 0 0 8px;
+}
+:lang(ne) {
+  letter-spacing: normal;
+}
+.workspace-heading,
+.dashboard-header,
+.medicine-header {
+  margin: 0 0 24px;
+  padding: 0;
+}
+.workspace-heading p,
+.dashboard-intro,
+.medicine-subtitle {
+  max-width: 65ch;
+  margin: 0;
+  color: #52645b;
+  line-height: 1.7;
+}
+.workspace-shell button,
+.workspace-shell select {
+  min-height: 48px;
+  min-width: 48px;
+  white-space: normal;
+}
+.workspace-shell input:not([type="checkbox"]):not([type="radio"]),
+.workspace-shell textarea {
+  font: inherit;
+  font-size: 1rem;
+  line-height: 1.75;
+  color: #1f2d27;
+  min-width: 0;
+}
+.workspace-shell textarea {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #879b90;
+  border-radius: 8px;
+  background: #fff;
+}
+.workspace-shell button {
+  border-radius: 8px;
+}
+.workspace-shell .btn-outline,
+.workspace-shell .btn-secondary,
+.workspace-shell .filter-pill,
+.workspace-shell .btn-mode-tab {
+  color: #174d42;
+  background: #fff;
+  border: 1px solid #879b90;
+}
+.workspace-shell .filter-pill.active,
+.workspace-shell .btn-mode-tab.active {
+  color: #fff;
+  background: #174d42;
+  border-color: #174d42;
+}
+.workspace-shell .text-button,
+.workspace-shell .btn-link {
+  color: #174d42;
+  background: transparent;
+}
+.workspace-shell .dashboard-actions-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0;
+  border-top: 1px solid #dce3da;
+}
+.workspace-shell .dashboard-card {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 20px 0;
+  gap: 16px;
+  border: 0;
+  border-bottom: 1px solid #dce3da;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  transform: none;
+}
+.workspace-shell .dashboard-card:hover {
+  transform: none;
+  box-shadow: none;
+}
+.workspace-shell .dashboard-card-icon {
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  background: transparent;
+  margin: 0;
+  flex-shrink: 0;
+}
+.workspace-shell .dashboard-card-content {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 4px 24px;
+  width: 100%;
+}
+.workspace-shell .dashboard-card-content h2 {
+  font-size: 1.1rem;
+  margin: 0;
+}
+.workspace-shell .dashboard-card-desc {
+  margin: 0;
+  font-size: 0.92rem;
+  color: #52645b;
+}
+.workspace-shell .dashboard-card-content button {
+  grid-column: 2;
+  grid-row: 1 / 3;
+  width: auto;
+  margin: 0;
+}
+.workspace-shell .recents-empty-state {
+  display: block;
+  text-align: left;
+  padding: 12px 0;
+  border: 0;
+  background: transparent;
+  min-height: 0;
+}
+.workspace-shell .recent-chat-card,
+.workspace-shell .history-row {
+  box-shadow: none;
+  border-radius: 0;
+  border: 0;
+  border-bottom: 1px solid #dce3da;
+  background: transparent;
+  padding: 16px 0;
+}
+.workspace-shell .history-row h2 {
+  font-size: 1.05rem;
+}
+.workspace-shell .history-category-pills,
+.workspace-shell .transcription-mode-tabs {
+  flex-wrap: wrap;
+}
+.workspace-shell .transcription-mode-tabs button {
+  flex: 1 1 120px;
+  padding: 10px;
+}
+.workspace-shell .processing-options,
+.history-management {
+  margin: 16px 0;
+  padding: 12px 0;
+  border-block: 1px solid #dce3da;
+}
+.processing-options summary,
+.history-management summary {
+  cursor: pointer;
+  color: #174d42;
+  padding: 8px 0;
+  font-weight: 600;
+}
+.workspace-shell .storage-note {
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: #52645b;
+  margin: 12px 0;
+}
+.workspace-shell .transcription-grid {
+  align-items: start;
+}
+.workspace-shell .transcription-source-panel,
+.workspace-shell .transcription-review-panel {
+  padding: 16px;
+  border-radius: 10px;
+  min-width: 0;
+}
+.workspace-shell .dropzone-box {
+  padding: 20px 12px;
+  min-height: 0;
+}
+.workspace-shell .dropzone-box > svg {
+  display: none;
+}
+.workspace-shell .dropzone-actions {
+  flex-wrap: wrap;
+}
+.workspace-shell .preview-container {
+  overflow: auto;
+  background: #eef1eb;
+}
+.workspace-shell .preview-controls-overlay {
+  position: static;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  background: #fff;
+  padding: 8px;
+}
+.workspace-shell .guide-card {
+  border-radius: 0;
+  border: 0;
+  border-top: 1px solid #dce3da;
+  padding: 16px 0;
+  box-shadow: none;
+}
+.workspace-shell .notice-info {
+  background: #f0f4ef;
+  color: #1f2d27;
+  border-radius: 8px;
+}
+.workspace-shell .input-group {
+  flex-wrap: wrap;
+  min-width: 0;
+}
+.workspace-shell .recognition-action {
+  padding: 12px 0;
+}
+.workspace-shell .medicine-warning-banner {
+  padding: 12px;
+  background: #fff8e7;
+}
+.workspace-dialog {
+  width: min(840px, calc(100% - 32px));
+  max-height: calc(100dvh - 32px);
+  padding: 0;
+  border: 1px solid #879b90;
+  border-radius: 12px;
+  color: #1f2d27;
+  background: #fff;
+  box-shadow: 0 20px 80px #10251d33;
+}
+.workspace-dialog::backdrop {
+  background: #13271f99;
+}
+.workspace-dialog .modal-header {
+  position: sticky;
+  top: 0;
+  background: #fff;
+  z-index: 2;
+  padding: 16px 24px;
+  gap: 16px;
+}
+.workspace-dialog .modal-header h2 {
+  font-size: 1.2rem;
+  margin: 0;
+}
+.workspace-dialog .modal-body {
+  padding: 20px 24px;
+}
+.workspace-dialog .btn-modal-close {
+  min-width: 48px;
+  min-height: 48px;
+  color: #174d42;
+  background: #fff;
+  border: 1px solid #879b90;
+}
+.workspace-shell p,
+.workspace-shell blockquote,
+.workspace-shell strong,
+.workspace-shell small {
+  overflow-wrap: anywhere;
+}
+@media (max-width: 600px) {
+  .workspace-shell .workspace-main {
+    padding: 24px 16px;
+  }
+  .workspace-shell .dashboard-card {
+    padding: 14px 0;
+    gap: 8px;
+  }
+  .workspace-shell .dashboard-card-icon {
+    display: none;
+  }
+  .workspace-shell .dashboard-card-content {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+  .workspace-shell .dashboard-card-content button {
+    grid-column: 1;
+    grid-row: auto;
+    justify-self: start;
+    margin-top: 4px;
+  }
+  .workspace-shell .dashboard-card-desc {
+    display: none;
+  }
+  .workspace-shell .history-row {
+    display: block;
+  }
+  .workspace-shell .history-row-actions {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-top: 12px;
+  }
+  .workspace-shell .transcription-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .workspace-shell .input-group input {
+    flex: 1 1 100%;
+    width: 100%;
+  }
+  .workspace-dialog .modal-header,
+  .workspace-dialog .modal-body {
+    padding: 16px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto;
+    animation: none;
+    transition: none;
+  }
+}
+
+fieldset.transcription-mode-tabs,
+fieldset.history-category-pills {
+  border: 0;
+  padding: 0;
+  margin-inline: 0;
+  min-width: 0;
+}
+
+.workspace-shell .panel-subheading {
+  font-size: 1.15rem;
+  line-height: 1.5;
+  margin: 0 0 16px;
+  font-family: inherit;
+}
+.workspace-shell .transcription-mode-tabs {
+  gap: 8px;
+}
+.workspace-shell .dashboard-recents-section {
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  padding: 24px 0;
+}
+.workspace-shell .medicine-search-form label {
+  flex: 1 1 100%;
+  font-weight: 600;
+}
