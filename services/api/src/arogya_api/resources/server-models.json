@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "qwen": {
+    "model": "qwen3.5:0.8b",
+    "digest": "de63045f29755d4721c09d54c9b45c2dadb644f4fd7d604d4cac90d96049971c",
+    "source": "https://ollama.com/library/qwen3.5:0.8b"
+  },
+  "laya": {
+    "repository": "convaiinnovations/laya-multilingual",
+    "revision": "1720e3e3357cfe1e281542e223f8273b0890ca34",
+    "sha256": "9d628fd971b700382ac6f65920a86f149777b2e748e0c955fb3b19695aa8f204",
+    "source": "https://github.com/NandhaKishorM/laya"
+  }
+}

@@ -1,0 +1,110 @@
+{
+  "translation": {
+    "repository": "rishi70612/nepali-tamang-english-mt",
+    "revision": "0b9fc97eefc86e73bedb137a8e5f8a29e57b4a34",
+    "license": "apache-2.0",
+    "files": {
+      "config.json": {
+        "sha256": "74350d247a57e6418cc3413c771614051e82cae206e78b0ce6e1126bdc4a2d7d",
+        "bytes": 920
+      },
+      "tokenizer_config.json": {
+        "sha256": "488a2d5a2c07bc84165e7b1b17b620cf91bb5c77b8b0b9885e8dc90cf72ed987",
+        "bytes": 186
+      },
+      "vocab-src.json": {
+        "sha256": "4535b32b748c3f6fa340f4b3ce117e75ef4a63f670f59421613b371687fd41cc",
+        "bytes": 432754
+      },
+      "vocab-tgt.json": {
+        "sha256": "4535b32b748c3f6fa340f4b3ce117e75ef4a63f670f59421613b371687fd41cc",
+        "bytes": 432754
+      },
+      "merges.txt": {
+        "sha256": "bbec8553a100399089505239e87dd387eb5ade45517bcc11fd698b0d3abe1fca",
+        "bytes": 251079
+      },
+      "pytorch_model.bin": {
+        "sha256": "6049de017729f7d1b84f90834f38033c09471e088c5d49e728891bc5d0979ad3",
+        "bytes": 305104903
+      }
+    }
+  },
+  "stt": {
+    "repository": "devrahulbanjara/whisper-small-nepali",
+    "revision": "67ef765a792693cae10403d88c8e91158290dd58",
+    "license": "apache-2.0",
+    "files": {
+      "config.json": {
+        "sha256": "0ea70eca28f14f6fd3e8bda1c4df5aa62c52656f156f59aee3b18d98c743071f",
+        "bytes": 1302
+      },
+      "generation_config.json": {
+        "sha256": "d8e4ca49e8474e9877600f60fd4ff9bccdd83f339f6332230be26ee11d4166c7",
+        "bytes": 4578
+      },
+      "model.safetensors": {
+        "sha256": "43d738cb9a9efeeadecfefec8ec298182e4fd753c3e6c877aa19d468f59ce32c",
+        "bytes": 966995080
+      }
+    }
+  },
+  "stt_processor": {
+    "repository": "openai/whisper-small",
+    "revision": "973afd24965f72e36ca33b3055d56a652f456b4d",
+    "license": "apache-2.0",
+    "files": {
+      "added_tokens.json": {
+        "sha256": "9715fd2243b6f06a5858b5e32950d2853f73dd5bc201aafcf76f5082a2d8acd1",
+        "bytes": 34604
+      },
+      "merges.txt": {
+        "sha256": "2df2990a395e35e8dfbc7511e08c12d56018d8d04691e0133e5d63b21e154dc6",
+        "bytes": 493869
+      },
+      "normalizer.json": {
+        "sha256": "bf1c507dc8724ca9cf9903640dacfb69dae2f00edee4f21ceba106a7392f26dd",
+        "bytes": 52666
+      },
+      "preprocessor_config.json": {
+        "sha256": "9b5cd03a36fbb8a627c64d98a5b5b126ead95a77720723944487311f0110b666",
+        "bytes": 184990
+      },
+      "special_tokens_map.json": {
+        "sha256": "e67ae3a0aaa99abcd9f187138e12db1f65c16a14761c50ef10eef2c174a7a691",
+        "bytes": 2194
+      },
+      "tokenizer.json": {
+        "sha256": "27fc476bfe7f17299480be2273fc0608e4d5a99aba2ab5dec5374b4482d1a566",
+        "bytes": 2480466
+      },
+      "tokenizer_config.json": {
+        "sha256": "2a4c4281cf9f51ac6ccc406fdc711a087afe6530f671fa7b80953edc498275ce",
+        "bytes": 282683
+      },
+      "vocab.json": {
+        "sha256": "8f680bba319e01a653d2e8a5dbc17a9157179e0576e6ce74ce0c06356c6e24f9",
+        "bytes": 835550
+      }
+    }
+  },
+  "tts": {
+    "repository": "ampixa/real-nepali-v0.2-kala",
+    "revision": "90a66e818fbb4e19a8ba9b191da422a70e46a296",
+    "license": "cc-by-sa-4.0",
+    "files": {
+      "config.json": {
+        "sha256": "0140dbd5fddaffb52f7fb5252d4e0038848483b71787133893084a2e8f5088b4",
+        "bytes": 3532
+      },
+      "speaker_id_map.json": {
+        "sha256": "6b1fb46572d7c468b9c9ae32e35579cdeb919fd8be0419768c65b2ac5f79dfce",
+        "bytes": 102
+      },
+      "real_nepali_v02_kala.fp32.onnx": {
+        "sha256": "ab85d482a61d9d76dad79b492f5ef3985698b24735497fe9646cd7a0c4b75ffd",
+        "bytes": 77746361
+      }
+    }
+  }
+}
