@@ -1,0 +1,80 @@
+{
+  "$defs": {
+    "Capability": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "enum": [
+            "browser_qwen",
+            "server_qwen",
+            "ocr",
+            "laya",
+            "tmt",
+            "offline_library",
+            "sync"
+          ],
+          "title": "Id",
+          "type": "string"
+        },
+        "available": {
+          "title": "Available",
+          "type": "boolean"
+        },
+        "reason": {
+          "title": "Reason",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "available",
+        "reason"
+      ],
+      "title": "Capability",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "stage": {
+      "default": "backend",
+      "enum": [
+        "starter",
+        "backend"
+      ],
+      "title": "Stage",
+      "type": "string"
+    },
+    "languages": {
+      "items": {
+        "enum": [
+          "en",
+          "ne",
+          "tam"
+        ],
+        "type": "string"
+      },
+      "title": "Languages",
+      "type": "array"
+    },
+    "features": {
+      "items": {
+        "$ref": "#/$defs/Capability"
+      },
+      "title": "Features",
+      "type": "array"
+    }
+  },
+  "required": [
+    "languages",
+    "features"
+  ],
+  "title": "Capabilities",
+  "type": "object"
+}

@@ -1,0 +1,56 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "title": "Id",
+      "type": "string"
+    },
+    "purpose": {
+      "enum": [
+        "server_chat",
+        "translation",
+        "speech_transcription",
+        "speech_synthesis",
+        "image_transcription",
+        "document_explanation",
+        "conversation_restore"
+      ],
+      "title": "Purpose",
+      "type": "string"
+    },
+    "data_categories": {
+      "items": {
+        "enum": [
+          "message_text",
+          "translation_text",
+          "audio_clip",
+          "speech_text",
+          "image_bytes",
+          "document_text",
+          "conversation_context"
+        ],
+        "type": "string"
+      },
+      "title": "Data Categories",
+      "type": "array"
+    },
+    "expires_at": {
+      "format": "date-time",
+      "title": "Expires At",
+      "type": "string"
+    },
+    "revoked": {
+      "title": "Revoked",
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "id",
+    "purpose",
+    "data_categories",
+    "expires_at",
+    "revoked"
+  ],
+  "title": "ConsentGrant",
+  "type": "object"
+}

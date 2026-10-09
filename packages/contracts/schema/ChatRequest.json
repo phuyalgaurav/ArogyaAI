@@ -1,0 +1,86 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "model_profile": {
+      "anyOf": [
+        {
+          "enum": [
+            "qwen",
+            "bonsai"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Model Profile"
+    },
+    "request_id": {
+      "maxLength": 100,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9_-]+$",
+      "title": "Request Id",
+      "type": "string"
+    },
+    "language": {
+      "enum": [
+        "en",
+        "ne",
+        "tam"
+      ],
+      "title": "Language",
+      "type": "string"
+    },
+    "message": {
+      "maxLength": 2000,
+      "minLength": 1,
+      "title": "Message",
+      "type": "string"
+    },
+    "medicine_id": {
+      "anyOf": [
+        {
+          "maxLength": 100,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Medicine Id"
+    },
+    "preferred_mode": {
+      "default": "auto",
+      "enum": [
+        "auto",
+        "server",
+        "local"
+      ],
+      "title": "Preferred Mode",
+      "type": "string"
+    },
+    "server_processing_consent_id": {
+      "anyOf": [
+        {
+          "maxLength": 100,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Server Processing Consent Id"
+    }
+  },
+  "required": [
+    "request_id",
+    "language",
+    "message"
+  ],
+  "title": "ChatRequest",
+  "type": "object"
+}

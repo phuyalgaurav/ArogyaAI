@@ -1,0 +1,49 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "purpose": {
+      "enum": [
+        "server_chat",
+        "translation",
+        "speech_transcription",
+        "speech_synthesis",
+        "image_transcription",
+        "document_explanation",
+        "conversation_restore"
+      ],
+      "title": "Purpose",
+      "type": "string"
+    },
+    "data_categories": {
+      "items": {
+        "enum": [
+          "message_text",
+          "translation_text",
+          "audio_clip",
+          "speech_text",
+          "image_bytes",
+          "document_text",
+          "conversation_context"
+        ],
+        "type": "string"
+      },
+      "maxItems": 1,
+      "minItems": 1,
+      "title": "Data Categories",
+      "type": "array"
+    },
+    "expires_in_seconds": {
+      "default": 900,
+      "maximum": 3600,
+      "minimum": 60,
+      "title": "Expires In Seconds",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "purpose",
+    "data_categories"
+  ],
+  "title": "ConsentRequest",
+  "type": "object"
+}

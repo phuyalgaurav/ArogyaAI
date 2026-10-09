@@ -1,0 +1,26 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "question": {
+      "maxLength": 2000,
+      "minLength": 1,
+      "title": "Question",
+      "type": "string"
+    },
+    "language": {
+      "enum": [
+        "en",
+        "ne",
+        "tam"
+      ],
+      "title": "Language",
+      "type": "string"
+    }
+  },
+  "required": [
+    "question",
+    "language"
+  ],
+  "title": "ConflictLookup",
+  "type": "object"
+}

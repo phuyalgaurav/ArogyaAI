@@ -1,0 +1,26 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "language": {
+      "enum": [
+        "en",
+        "ne",
+        "tam"
+      ],
+      "title": "Language",
+      "type": "string"
+    },
+    "expires_in_seconds": {
+      "default": 3600,
+      "maximum": 3600,
+      "minimum": 60,
+      "title": "Expires In Seconds",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "language"
+  ],
+  "title": "BundlePublishRequest",
+  "type": "object"
+}
