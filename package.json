@@ -1,0 +1,52 @@
+{
+  "name": "arogya-ai",
+  "private": true,
+  "version": "0.1.0",
+  "license": "MIT",
+  "packageManager": "pnpm@10.16.1",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "node scripts/assets/prepare-history.mjs && node scripts/assets/prepare-ocr.mjs && node scripts/dev.mjs",
+    "dev:web": "node scripts/assets/prepare-history.mjs && node scripts/assets/prepare-ocr.mjs && pnpm --filter @arogya/web dev",
+    "dev:api": "node scripts/dev.mjs --api",
+    "dev:backend": "node scripts/dev.mjs --backend",
+    "setup:ai": "uv sync --project services/api --extra classifier && uv run --project services/api --extra classifier python -m arogya_api.cli.setup_ai",
+    "setup:operator": "uv run --project services/api python -m arogya_api.cli.setup_operator",
+    "setup": "pnpm install && uv sync --project services/api && pnpm setup:ocr",
+    "build": "node scripts/assets/prepare-history.mjs && node scripts/assets/prepare-ocr.mjs && pnpm --filter @arogya/web build",
+    "typecheck": "pnpm --filter @arogya/web exec next typegen && pnpm --filter @arogya/web typecheck",
+    "lint": "biome check . && uv run --project services/api ruff check services/api scripts",
+    "format": "biome check --write . && uv run --project services/api ruff format services/api scripts",
+    "test": "uv run --project services/api python -m pytest services/api/tests",
+    "test:web": "node --test apps/web/tests/*.test.mjs",
+    "test:live": "uv run --project services/api python scripts/verify/backend.py",
+    "eval:ai": "uv run --project services/api python -m arogya_api.cli.evaluate --mode live",
+    "eval:gateway": "uv run --project services/api python -m arogya_api.cli.evaluate --mode deterministic",
+    "eval:selector": "uv run --project services/api python scripts/evaluate/selector.py",
+    "contracts:generate": "uv run --project services/api python scripts/contracts/export.py && node scripts/contracts/generate-types.mjs",
+    "contracts:check": "uv run --project services/api python scripts/contracts/export.py --check && node scripts/contracts/generate-types.mjs --check",
+    "setup:ocr": "node scripts/assets/prepare-history.mjs && node scripts/assets/prepare-ocr.mjs",
+    "setup:language": "uv sync --project services/api --extra classifier --extra language && uv run --project services/api --extra language python -m arogya_api.cli.setup_speech",
+    "test:language": "uv run --project services/api --extra language python scripts/verify/language.py",
+    "setup:server-ocr": "pnpm setup:ocr && uv sync --project services/api --extra classifier --extra language --extra ocr && uv run --project services/api --extra ocr python -m arogya_api.cli.setup_ocr",
+    "build:local": "AROGYA_WEB_EXPORT=1 NEXT_PUBLIC_API_URL= pnpm build",
+    "build:production": "AROGYA_WEB_DIST_DIR=.next-production pnpm build",
+    "start:web": "AROGYA_WEB_DIST_DIR=.next-production pnpm --filter @arogya/web start",
+    "start:backend": "node scripts/dev.mjs --backend --production",
+    "start:local": "uv run --project services/api --extra classifier --extra language --extra ocr python -m arogya_api.cli.serve",
+    "test:images": "uv run --project services/api --extra ocr python scripts/verify/images.py",
+    "test:documents": "uv run --project services/api --extra language python scripts/verify/documents.py",
+    "test:prescriptions": "uv run --project services/api --extra ocr python scripts/verify/prescription.py",
+    "setup:bonsai": "uv run --project services/api python -m arogya_api.cli.setup_bonsai",
+    "knowledge:import": "uv run --project services/api python -m arogya_api.cli.import_knowledge",
+    "eval:recognition": "uv run --project services/api --extra ocr python scripts/evaluate/recognition.py",
+    "test:conversations": "uv run --project services/api --extra language python scripts/verify/conversations.py",
+    "test:models": "uv run --project services/api python scripts/verify/model_choices.py"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.5.15",
+    "json-schema-to-typescript": "16.0.0"
+  }
+}
