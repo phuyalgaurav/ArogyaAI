@@ -1,0 +1,32 @@
+{
+  "name": "@arogya/web",
+  "private": true,
+  "version": "0.1.0",
+  "license": "MIT",
+  "scripts": {
+    "dev": "next dev --hostname 127.0.0.1 --port 3000",
+    "build": "next build",
+    "start": "next start --hostname 127.0.0.1 --port 3000",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@arogya/contracts": "workspace:*",
+    "@fontsource/noto-sans-devanagari": "^5.3.0",
+    "next": "16.4.0",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "sql.js": "1.14.2",
+    "tesseract.js": "7.0.0"
+  },
+  "devDependencies": {
+    "@tesseract.js-data/eng": "1.0.0",
+    "@tesseract.js-data/nep": "1.0.0",
+    "@types/node": "24.10.1",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@types/sql.js": "1.4.11",
+    "jsdom": "^30.1.2",
+    "tesseract.js-core": "7.0.0",
+    "typescript": "5.9.3"
+  }
+}

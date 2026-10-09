@@ -1,0 +1,29 @@
+name: Project checks
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.16.1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: 0.11.8
+          python-version: "3.13"
+      - run: pnpm install --frozen-lockfile
+      - run: uv sync --project services/api --frozen --extra ocr
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm test:web
+      - run: pnpm contracts:check
+      - run: pnpm build
+      - run: pnpm build:local
