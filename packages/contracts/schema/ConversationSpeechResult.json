@@ -1,0 +1,109 @@
+{
+  "$defs": {
+    "SpeechResult": {
+      "additionalProperties": false,
+      "properties": {
+        "audio_base64": {
+          "maxLength": 2600000,
+          "minLength": 44,
+          "title": "Audio Base64",
+          "type": "string"
+        },
+        "mime_type": {
+          "const": "audio/wav",
+          "default": "audio/wav",
+          "title": "Mime Type",
+          "type": "string"
+        },
+        "text": {
+          "title": "Text",
+          "type": "string"
+        },
+        "language": {
+          "const": "ne",
+          "default": "ne",
+          "title": "Language",
+          "type": "string"
+        },
+        "speaker": {
+          "enum": [
+            "kala",
+            "barsha"
+          ],
+          "title": "Speaker",
+          "type": "string"
+        },
+        "duration_seconds": {
+          "exclusiveMinimum": 0,
+          "maximum": 40,
+          "title": "Duration Seconds",
+          "type": "number"
+        },
+        "sample_rate": {
+          "const": 22050,
+          "default": 22050,
+          "title": "Sample Rate",
+          "type": "integer"
+        },
+        "model": {
+          "title": "Model",
+          "type": "string"
+        },
+        "revision": {
+          "title": "Revision",
+          "type": "string"
+        }
+      },
+      "required": [
+        "audio_base64",
+        "text",
+        "speaker",
+        "duration_seconds",
+        "model",
+        "revision"
+      ],
+      "title": "SpeechResult",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "conversation_id": {
+      "pattern": "^[a-f0-9]{32}$",
+      "title": "Conversation Id",
+      "type": "string"
+    },
+    "turn_id": {
+      "maxLength": 100,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9_-]+$",
+      "title": "Turn Id",
+      "type": "string"
+    },
+    "context_revision": {
+      "title": "Context Revision",
+      "type": "integer"
+    },
+    "chunk_index": {
+      "title": "Chunk Index",
+      "type": "integer"
+    },
+    "chunk_count": {
+      "title": "Chunk Count",
+      "type": "integer"
+    },
+    "speech": {
+      "$ref": "#/$defs/SpeechResult"
+    }
+  },
+  "required": [
+    "conversation_id",
+    "turn_id",
+    "context_revision",
+    "chunk_index",
+    "chunk_count",
+    "speech"
+  ],
+  "title": "ConversationSpeechResult",
+  "type": "object"
+}

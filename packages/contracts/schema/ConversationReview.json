@@ -1,0 +1,48 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "expected_context_revision": {
+      "minimum": 0,
+      "title": "Expected Context Revision",
+      "type": "integer"
+    },
+    "text": {
+      "maxLength": 8000,
+      "minLength": 1,
+      "title": "Text",
+      "type": "string"
+    },
+    "text_checked": {
+      "const": true,
+      "title": "Text Checked",
+      "type": "boolean"
+    },
+    "consent_id": {
+      "maxLength": 100,
+      "minLength": 1,
+      "title": "Consent Id",
+      "type": "string"
+    },
+    "medicine_id": {
+      "anyOf": [
+        {
+          "maxLength": 100,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Medicine Id"
+    }
+  },
+  "required": [
+    "expected_context_revision",
+    "text",
+    "text_checked",
+    "consent_id"
+  ],
+  "title": "ConversationReview",
+  "type": "object"
+}

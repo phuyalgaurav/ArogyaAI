@@ -1,0 +1,55 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "request_id": {
+      "maxLength": 100,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9_-]+$",
+      "title": "Request Id",
+      "type": "string"
+    },
+    "expected_context_revision": {
+      "minimum": 0,
+      "title": "Expected Context Revision",
+      "type": "integer"
+    },
+    "kind": {
+      "anyOf": [
+        {
+          "enum": [
+            "prescription",
+            "doctor_note",
+            "report"
+          ],
+          "type": "string"
+        },
+        {
+          "const": "medicine",
+          "type": "string"
+        }
+      ],
+      "default": "prescription",
+      "title": "Kind"
+    },
+    "text": {
+      "maxLength": 8000,
+      "minLength": 1,
+      "title": "Text",
+      "type": "string"
+    },
+    "consent_id": {
+      "maxLength": 100,
+      "minLength": 1,
+      "title": "Consent Id",
+      "type": "string"
+    }
+  },
+  "required": [
+    "request_id",
+    "expected_context_revision",
+    "text",
+    "consent_id"
+  ],
+  "title": "ConversationTextAttachment",
+  "type": "object"
+}

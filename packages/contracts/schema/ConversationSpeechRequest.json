@@ -1,0 +1,46 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "turn_id": {
+      "maxLength": 100,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9_-]+$",
+      "title": "Turn Id",
+      "type": "string"
+    },
+    "expected_context_revision": {
+      "minimum": 0,
+      "title": "Expected Context Revision",
+      "type": "integer"
+    },
+    "chunk_index": {
+      "maximum": 200,
+      "minimum": 0,
+      "title": "Chunk Index",
+      "type": "integer"
+    },
+    "speaker": {
+      "default": "kala",
+      "enum": [
+        "kala",
+        "barsha"
+      ],
+      "title": "Speaker",
+      "type": "string"
+    },
+    "consent_id": {
+      "maxLength": 100,
+      "minLength": 1,
+      "title": "Consent Id",
+      "type": "string"
+    }
+  },
+  "required": [
+    "turn_id",
+    "expected_context_revision",
+    "chunk_index",
+    "consent_id"
+  ],
+  "title": "ConversationSpeechRequest",
+  "type": "object"
+}
