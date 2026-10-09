@@ -1,0 +1,7 @@
+{
+  "name": "@arogya/contracts",
+  "private": true,
+  "version": "0.1.0",
+  "license": "MIT",
+  "types": "./generated/index.d.ts"
+}
