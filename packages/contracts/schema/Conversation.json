@@ -1,0 +1,945 @@
+{
+  "$defs": {
+    "ArogyaResponse": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "request_id": {
+          "minLength": 1,
+          "title": "Request Id",
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "answered",
+            "needs_clarification",
+            "needs_professional_review",
+            "urgent",
+            "unavailable"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "language": {
+          "enum": [
+            "en",
+            "ne",
+            "tam"
+          ],
+          "title": "Language",
+          "type": "string"
+        },
+        "answer": {
+          "title": "Answer",
+          "type": "string"
+        },
+        "evidence": {
+          "items": {
+            "$ref": "#/$defs/Evidence"
+          },
+          "title": "Evidence",
+          "type": "array"
+        },
+        "safety": {
+          "$ref": "#/$defs/Safety"
+        },
+        "provenance": {
+          "$ref": "#/$defs/Provenance"
+        }
+      },
+      "required": [
+        "request_id",
+        "status",
+        "language",
+        "answer",
+        "evidence",
+        "safety",
+        "provenance"
+      ],
+      "title": "ArogyaResponse",
+      "type": "object"
+    },
+    "ConversationAttachment": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[a-f0-9]{32}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "request_id": {
+          "maxLength": 100,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_-]+$",
+          "title": "Request Id",
+          "type": "string"
+        },
+        "request_fingerprint": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Request Fingerprint",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "prescription",
+            "doctor_note",
+            "report",
+            "medicine"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "created_at": {
+          "format": "date-time",
+          "title": "Created At",
+          "type": "string"
+        },
+        "original_available": {
+          "const": false,
+          "default": false,
+          "title": "Original Available",
+          "type": "boolean"
+        },
+        "original_text": {
+          "maxLength": 30000,
+          "title": "Original Text",
+          "type": "string"
+        },
+        "reviewed_text": {
+          "anyOf": [
+            {
+              "maxLength": 8000,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reviewed Text"
+        },
+        "reviewed_revision": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Reviewed Revision",
+          "type": "integer"
+        },
+        "review_history": {
+          "items": {
+            "$ref": "#/$defs/ReviewedContextRevision"
+          },
+          "maxItems": 20,
+          "title": "Review History",
+          "type": "array"
+        },
+        "recognition": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ImageReadResult"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "medicine_candidates": {
+          "items": {
+            "$ref": "#/$defs/MedicineRecord"
+          },
+          "maxItems": 20,
+          "title": "Medicine Candidates",
+          "type": "array"
+        },
+        "observed_strengths": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 20,
+          "title": "Observed Strengths",
+          "type": "array"
+        },
+        "selected_medicine": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/MedicineRecord"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "id",
+        "request_id",
+        "request_fingerprint",
+        "kind",
+        "created_at",
+        "original_text"
+      ],
+      "title": "ConversationAttachment",
+      "type": "object"
+    },
+    "ConversationReference": {
+      "additionalProperties": false,
+      "properties": {
+        "attachment_id": {
+          "pattern": "^[a-f0-9]{32}$",
+          "title": "Attachment Id",
+          "type": "string"
+        },
+        "context_revision": {
+          "minimum": 0,
+          "title": "Context Revision",
+          "type": "integer"
+        },
+        "line_id": {
+          "pattern": "^L[1-9][0-9]?$",
+          "title": "Line Id",
+          "type": "string"
+        },
+        "quote": {
+          "maxLength": 500,
+          "title": "Quote",
+          "type": "string"
+        }
+      },
+      "required": [
+        "attachment_id",
+        "context_revision",
+        "line_id",
+        "quote"
+      ],
+      "title": "ConversationReference",
+      "type": "object"
+    },
+    "ConversationTurn": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "maxLength": 100,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_-]+$",
+          "title": "Id",
+          "type": "string"
+        },
+        "message": {
+          "maxLength": 2000,
+          "minLength": 1,
+          "title": "Message",
+          "type": "string"
+        },
+        "answer": {
+          "maxLength": 30000,
+          "title": "Answer",
+          "type": "string"
+        },
+        "language": {
+          "enum": [
+            "en",
+            "ne"
+          ],
+          "title": "Language",
+          "type": "string"
+        },
+        "timestamp": {
+          "format": "date-time",
+          "title": "Timestamp",
+          "type": "string"
+        },
+        "context_revision": {
+          "minimum": 0,
+          "title": "Context Revision",
+          "type": "integer"
+        },
+        "status": {
+          "maxLength": 60,
+          "title": "Status",
+          "type": "string"
+        },
+        "references": {
+          "items": {
+            "$ref": "#/$defs/ConversationReference"
+          },
+          "maxItems": 40,
+          "title": "References",
+          "type": "array"
+        },
+        "document": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DocumentExplainResult"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "health": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ArogyaResponse"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "request_fingerprint": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Request Fingerprint",
+          "type": "string"
+        },
+        "resolved_question": {
+          "anyOf": [
+            {
+              "maxLength": 2000,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Resolved Question"
+        },
+        "restored_from_client": {
+          "default": false,
+          "title": "Restored From Client",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "message",
+        "answer",
+        "language",
+        "timestamp",
+        "context_revision",
+        "status",
+        "request_fingerprint"
+      ],
+      "title": "ConversationTurn",
+      "type": "object"
+    },
+    "DocumentDefinition": {
+      "additionalProperties": false,
+      "properties": {
+        "term": {
+          "title": "Term",
+          "type": "string"
+        },
+        "meaning": {
+          "title": "Meaning",
+          "type": "string"
+        },
+        "source_url": {
+          "title": "Source Url",
+          "type": "string"
+        }
+      },
+      "required": [
+        "term",
+        "meaning",
+        "source_url"
+      ],
+      "title": "DocumentDefinition",
+      "type": "object"
+    },
+    "DocumentExplainResult": {
+      "additionalProperties": false,
+      "properties": {
+        "status": {
+          "enum": [
+            "draft",
+            "no_match",
+            "professional_review",
+            "urgent"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "notice": {
+          "title": "Notice",
+          "type": "string"
+        },
+        "items": {
+          "items": {
+            "$ref": "#/$defs/DocumentItem"
+          },
+          "title": "Items",
+          "type": "array"
+        },
+        "answer_line_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Answer Line Ids",
+          "type": "array"
+        },
+        "document_sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Document Sha256",
+          "type": "string"
+        },
+        "model": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Model"
+        },
+        "revision": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Revision"
+        },
+        "speech_text_ne": {
+          "maxLength": 300,
+          "title": "Speech Text Ne",
+          "type": "string"
+        },
+        "question_method": {
+          "default": "none",
+          "enum": [
+            "none",
+            "literal_document_match",
+            "model_selection"
+          ],
+          "title": "Question Method",
+          "type": "string"
+        }
+      },
+      "required": [
+        "status",
+        "notice",
+        "items",
+        "answer_line_ids",
+        "document_sha256",
+        "speech_text_ne"
+      ],
+      "title": "DocumentExplainResult",
+      "type": "object"
+    },
+    "DocumentItem": {
+      "additionalProperties": false,
+      "properties": {
+        "line_id": {
+          "title": "Line Id",
+          "type": "string"
+        },
+        "quote": {
+          "title": "Quote",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "medicine",
+            "instruction",
+            "finding",
+            "follow_up",
+            "other"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "meaning": {
+          "title": "Meaning",
+          "type": "string"
+        },
+        "definitions": {
+          "items": {
+            "$ref": "#/$defs/DocumentDefinition"
+          },
+          "title": "Definitions",
+          "type": "array"
+        },
+        "check_with_professional": {
+          "title": "Check With Professional",
+          "type": "boolean"
+        },
+        "speech_text_ne": {
+          "maxLength": 300,
+          "title": "Speech Text Ne",
+          "type": "string"
+        }
+      },
+      "required": [
+        "line_id",
+        "quote",
+        "kind",
+        "meaning",
+        "definitions",
+        "check_with_professional",
+        "speech_text_ne"
+      ],
+      "title": "DocumentItem",
+      "type": "object"
+    },
+    "Evidence": {
+      "additionalProperties": false,
+      "properties": {
+        "source_id": {
+          "minLength": 1,
+          "title": "Source Id",
+          "type": "string"
+        },
+        "version": {
+          "minLength": 1,
+          "title": "Version",
+          "type": "string"
+        },
+        "section_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Section Id"
+        }
+      },
+      "required": [
+        "source_id",
+        "version"
+      ],
+      "title": "Evidence",
+      "type": "object"
+    },
+    "ImageReadResult": {
+      "additionalProperties": false,
+      "properties": {
+        "text": {
+          "maxLength": 30000,
+          "title": "Text",
+          "type": "string"
+        },
+        "language": {
+          "enum": [
+            "eng",
+            "nep",
+            "eng+nep"
+          ],
+          "title": "Language",
+          "type": "string"
+        },
+        "status": {
+          "const": "unverified",
+          "default": "unverified",
+          "title": "Status",
+          "type": "string"
+        },
+        "engine": {
+          "maxLength": 120,
+          "title": "Engine",
+          "type": "string"
+        },
+        "revision": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Revision",
+          "type": "string"
+        },
+        "method": {
+          "anyOf": [
+            {
+              "enum": [
+                "vision",
+                "printed_ocr"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Method"
+        },
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 8,
+          "title": "Warnings",
+          "type": "array"
+        }
+      },
+      "required": [
+        "text",
+        "language",
+        "engine",
+        "revision"
+      ],
+      "title": "ImageReadResult",
+      "type": "object"
+    },
+    "MedicineRecord": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "maxLength": 100,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "canonical_name": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Canonical Name",
+          "type": "string"
+        },
+        "active_ingredients": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 20,
+          "minItems": 1,
+          "title": "Active Ingredients",
+          "type": "array"
+        },
+        "aliases": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 50,
+          "title": "Aliases",
+          "type": "array"
+        },
+        "jurisdiction": {
+          "maxLength": 100,
+          "minLength": 1,
+          "title": "Jurisdiction",
+          "type": "string"
+        },
+        "source_ids": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 10,
+          "minItems": 1,
+          "title": "Source Ids",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "canonical_name",
+        "active_ingredients",
+        "aliases",
+        "jurisdiction",
+        "source_ids"
+      ],
+      "title": "MedicineRecord",
+      "type": "object"
+    },
+    "Provenance": {
+      "additionalProperties": false,
+      "properties": {
+        "mode": {
+          "enum": [
+            "local",
+            "server",
+            "static"
+          ],
+          "title": "Mode",
+          "type": "string"
+        },
+        "model": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Model"
+        },
+        "knowledge_version": {
+          "title": "Knowledge Version",
+          "type": "string"
+        },
+        "translator": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Translator"
+        },
+        "model_revision": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Model Revision"
+        },
+        "router": {
+          "default": "rules",
+          "title": "Router",
+          "type": "string"
+        },
+        "router_intent": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Router Intent"
+        },
+        "router_revision": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Router Revision"
+        },
+        "routing_disagreement": {
+          "default": false,
+          "title": "Routing Disagreement",
+          "type": "boolean"
+        },
+        "policy_version": {
+          "default": "education-extractive-2",
+          "title": "Policy Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "mode",
+        "model",
+        "knowledge_version"
+      ],
+      "title": "Provenance",
+      "type": "object"
+    },
+    "ReviewedContextRevision": {
+      "additionalProperties": false,
+      "properties": {
+        "revision": {
+          "minimum": 1,
+          "title": "Revision",
+          "type": "integer"
+        },
+        "context_revision": {
+          "minimum": 1,
+          "title": "Context Revision",
+          "type": "integer"
+        },
+        "reviewed_at": {
+          "format": "date-time",
+          "title": "Reviewed At",
+          "type": "string"
+        },
+        "text": {
+          "maxLength": 8000,
+          "minLength": 1,
+          "title": "Text",
+          "type": "string"
+        },
+        "selected_medicine_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Selected Medicine Id"
+        }
+      },
+      "required": [
+        "revision",
+        "context_revision",
+        "reviewed_at",
+        "text"
+      ],
+      "title": "ReviewedContextRevision",
+      "type": "object"
+    },
+    "Safety": {
+      "additionalProperties": false,
+      "properties": {
+        "rule_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Rule Ids",
+          "type": "array"
+        },
+        "abstained": {
+          "title": "Abstained",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "rule_ids",
+        "abstained"
+      ],
+      "title": "Safety",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": 1,
+      "default": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "id": {
+      "pattern": "^[a-f0-9]{32}$",
+      "title": "Id",
+      "type": "string"
+    },
+    "mode": {
+      "enum": [
+        "document",
+        "medicine",
+        "health"
+      ],
+      "title": "Mode",
+      "type": "string"
+    },
+    "title": {
+      "maxLength": 80,
+      "minLength": 1,
+      "title": "Title",
+      "type": "string"
+    },
+    "language": {
+      "enum": [
+        "en",
+        "ne"
+      ],
+      "title": "Language",
+      "type": "string"
+    },
+    "storage": {
+      "enum": [
+        "session",
+        "server_history"
+      ],
+      "title": "Storage",
+      "type": "string"
+    },
+    "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+    },
+    "updated_at": {
+      "format": "date-time",
+      "title": "Updated At",
+      "type": "string"
+    },
+    "expires_at": {
+      "format": "date-time",
+      "title": "Expires At",
+      "type": "string"
+    },
+    "version": {
+      "default": 0,
+      "minimum": 0,
+      "title": "Version",
+      "type": "integer"
+    },
+    "restored_from_client": {
+      "default": false,
+      "title": "Restored From Client",
+      "type": "boolean"
+    },
+    "context_revision": {
+      "default": 0,
+      "minimum": 0,
+      "title": "Context Revision",
+      "type": "integer"
+    },
+    "active_attachment_id": {
+      "anyOf": [
+        {
+          "pattern": "^[a-f0-9]{32}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Active Attachment Id"
+    },
+    "attachments": {
+      "items": {
+        "$ref": "#/$defs/ConversationAttachment"
+      },
+      "maxItems": 8,
+      "title": "Attachments",
+      "type": "array"
+    },
+    "turns": {
+      "items": {
+        "$ref": "#/$defs/ConversationTurn"
+      },
+      "maxItems": 50,
+      "title": "Turns",
+      "type": "array"
+    }
+  },
+  "required": [
+    "id",
+    "mode",
+    "title",
+    "language",
+    "storage",
+    "created_at",
+    "updated_at",
+    "expires_at"
+  ],
+  "title": "Conversation",
+  "type": "object"
+}
