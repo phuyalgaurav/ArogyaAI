@@ -1,0 +1,93 @@
+{
+  "$defs": {
+    "MedicineRecord": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "maxLength": 100,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "canonical_name": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Canonical Name",
+          "type": "string"
+        },
+        "active_ingredients": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 20,
+          "minItems": 1,
+          "title": "Active Ingredients",
+          "type": "array"
+        },
+        "aliases": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 50,
+          "title": "Aliases",
+          "type": "array"
+        },
+        "jurisdiction": {
+          "maxLength": 100,
+          "minLength": 1,
+          "title": "Jurisdiction",
+          "type": "string"
+        },
+        "source_ids": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 10,
+          "minItems": 1,
+          "title": "Source Ids",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "canonical_name",
+        "active_ingredients",
+        "aliases",
+        "jurisdiction",
+        "source_ids"
+      ],
+      "title": "MedicineRecord",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "status": {
+      "enum": [
+        "candidate",
+        "needs_clarification"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "candidates": {
+      "items": {
+        "$ref": "#/$defs/MedicineRecord"
+      },
+      "title": "Candidates",
+      "type": "array"
+    },
+    "verified": {
+      "const": false,
+      "default": false,
+      "title": "Verified",
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "status",
+    "candidates"
+  ],
+  "title": "MedicineResolution",
+  "type": "object"
+}

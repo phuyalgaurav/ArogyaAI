@@ -1,0 +1,34 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "title": "Id",
+      "type": "string"
+    },
+    "roles": {
+      "items": {
+        "enum": [
+          "administrator",
+          "content_editor",
+          "clinical_reviewer",
+          "license_reviewer"
+        ],
+        "type": "string"
+      },
+      "title": "Roles",
+      "type": "array"
+    },
+    "expires_at": {
+      "format": "date-time",
+      "title": "Expires At",
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "roles",
+    "expires_at"
+  ],
+  "title": "OperatorIdentity",
+  "type": "object"
+}
