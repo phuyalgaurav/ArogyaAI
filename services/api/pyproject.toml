@@ -1,0 +1,49 @@
+[project]
+name = "arogya-api"
+version = "0.3.0"
+description = "ArogyaAI consent gateway, reviewed knowledge store, and private inference worker"
+license = "MIT"
+requires-python = ">=3.13"
+dependencies = [
+  "fastapi>=0.115,<1",
+  "pydantic>=2.11,<3",
+  "uvicorn>=0.34,<1",
+  "httpx>=0.28,<1",
+  "python-dotenv>=1,<2",
+  "cryptography>=46,<51",
+]
+
+[project.optional-dependencies]
+ocr = ["pillow>=12,<13"]
+classifier = ["laya==0.4.1"]
+language = [
+    "kala-tts==0.1.4",
+    "numpy>=2,<3",
+    "sacremoses==0.1.1",
+    "torch>=2.6,<3",
+    "transformers==4.57.6",
+]
+
+[dependency-groups]
+dev = ["httpx>=0.28,<1", "pytest>=8,<10", "ruff>=0.11,<1"]
+
+[build-system]
+requires = ["hatchling>=1.26,<2"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/arogya_api"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"src/arogya_api/resources/language-models.json" = "arogya_api/resources/language-models.json"
+"../../LICENSE" = "arogya_api/LICENSE"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP"]
