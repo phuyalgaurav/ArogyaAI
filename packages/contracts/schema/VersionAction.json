@@ -1,0 +1,22 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "expected_hash": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Expected Hash",
+      "type": "string"
+    },
+    "reason": {
+      "maxLength": 1000,
+      "minLength": 10,
+      "title": "Reason",
+      "type": "string"
+    }
+  },
+  "required": [
+    "expected_hash",
+    "reason"
+  ],
+  "title": "VersionAction",
+  "type": "object"
+}
