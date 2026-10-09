@@ -1,0 +1,127 @@
+{
+  "$defs": {
+    "ImageReadRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "default": "prescription",
+          "enum": [
+            "prescription",
+            "doctor_note",
+            "report",
+            "medicine"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "model_profile": {
+          "anyOf": [
+            {
+              "enum": [
+                "qwen",
+                "bonsai"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Model Profile"
+        },
+        "image_base64": {
+          "maxLength": 11184812,
+          "minLength": 16,
+          "title": "Image Base64",
+          "type": "string"
+        },
+        "language": {
+          "default": "eng",
+          "enum": [
+            "eng",
+            "nep",
+            "eng+nep"
+          ],
+          "title": "Language",
+          "type": "string"
+        },
+        "rotation": {
+          "default": 0,
+          "enum": [
+            0,
+            90,
+            180,
+            270
+          ],
+          "title": "Rotation",
+          "type": "integer"
+        },
+        "consent_id": {
+          "maxLength": 100,
+          "minLength": 1,
+          "title": "Consent Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "image_base64",
+        "consent_id"
+      ],
+      "title": "ImageReadRequest",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "request_id": {
+      "maxLength": 100,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9_-]+$",
+      "title": "Request Id",
+      "type": "string"
+    },
+    "expected_context_revision": {
+      "minimum": 0,
+      "title": "Expected Context Revision",
+      "type": "integer"
+    },
+    "kind": {
+      "anyOf": [
+        {
+          "enum": [
+            "prescription",
+            "doctor_note",
+            "report"
+          ],
+          "type": "string"
+        },
+        {
+          "const": "medicine",
+          "type": "string"
+        }
+      ],
+      "default": "prescription",
+      "title": "Kind"
+    },
+    "method": {
+      "default": "vision",
+      "enum": [
+        "vision",
+        "printed_ocr"
+      ],
+      "title": "Method",
+      "type": "string"
+    },
+    "image": {
+      "$ref": "#/$defs/ImageReadRequest"
+    }
+  },
+  "required": [
+    "request_id",
+    "expected_context_revision",
+    "image"
+  ],
+  "title": "ConversationRecognitionRequest",
+  "type": "object"
+}

@@ -1,0 +1,33 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "attachment_id": {
+      "pattern": "^[a-f0-9]{32}$",
+      "title": "Attachment Id",
+      "type": "string"
+    },
+    "context_revision": {
+      "minimum": 0,
+      "title": "Context Revision",
+      "type": "integer"
+    },
+    "line_id": {
+      "pattern": "^L[1-9][0-9]?$",
+      "title": "Line Id",
+      "type": "string"
+    },
+    "quote": {
+      "maxLength": 500,
+      "title": "Quote",
+      "type": "string"
+    }
+  },
+  "required": [
+    "attachment_id",
+    "context_revision",
+    "line_id",
+    "quote"
+  ],
+  "title": "ConversationReference",
+  "type": "object"
+}
