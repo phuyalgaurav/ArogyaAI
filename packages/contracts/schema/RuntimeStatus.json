@@ -1,0 +1,214 @@
+{
+  "$defs": {
+    "EngineRuntime": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "enum": [
+            "qwen_selector",
+            "laya_router",
+            "translation",
+            "nepali_stt",
+            "nepali_tts",
+            "server_ocr",
+            "bonsai"
+          ],
+          "title": "Id",
+          "type": "string"
+        },
+        "name": {
+          "maxLength": 120,
+          "title": "Name",
+          "type": "string"
+        },
+        "task": {
+          "enum": [
+            "evidence_selection",
+            "intent_routing",
+            "translation",
+            "transcription",
+            "speech_synthesis",
+            "printed_text_recognition",
+            "document_vision"
+          ],
+          "title": "Task",
+          "type": "string"
+        },
+        "state": {
+          "enum": [
+            "unconfigured",
+            "unavailable",
+            "ready",
+            "busy"
+          ],
+          "title": "State",
+          "type": "string"
+        },
+        "revision": {
+          "anyOf": [
+            {
+              "maxLength": 74,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Revision"
+        },
+        "loaded": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Loaded"
+        },
+        "memory_bytes": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Memory Bytes"
+        },
+        "context_tokens": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Context Tokens"
+        },
+        "reason": {
+          "maxLength": 200,
+          "title": "Reason",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "task",
+        "state",
+        "reason"
+      ],
+      "title": "EngineRuntime",
+      "type": "object"
+    },
+    "HostSpecs": {
+      "additionalProperties": false,
+      "properties": {
+        "system": {
+          "maxLength": 40,
+          "title": "System",
+          "type": "string"
+        },
+        "architecture": {
+          "maxLength": 40,
+          "title": "Architecture",
+          "type": "string"
+        },
+        "cpu_threads": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Cpu Threads"
+        },
+        "memory_bytes": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Memory Bytes"
+        }
+      },
+      "required": [
+        "system",
+        "architecture"
+      ],
+      "title": "HostSpecs",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "checked_at": {
+      "format": "date-time",
+      "title": "Checked At",
+      "type": "string"
+    },
+    "engines": {
+      "items": {
+        "$ref": "#/$defs/EngineRuntime"
+      },
+      "maxItems": 7,
+      "minItems": 2,
+      "title": "Engines",
+      "type": "array"
+    },
+    "host": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/HostSpecs"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "reviewed_sources": {
+      "minimum": 0,
+      "title": "Reviewed Sources",
+      "type": "integer"
+    },
+    "reviewed_questions": {
+      "minimum": 0,
+      "title": "Reviewed Questions",
+      "type": "integer"
+    },
+    "free_form_answers": {
+      "const": false,
+      "default": false,
+      "title": "Free Form Answers",
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "checked_at",
+    "engines",
+    "reviewed_sources",
+    "reviewed_questions"
+  ],
+  "title": "RuntimeStatus",
+  "type": "object"
+}

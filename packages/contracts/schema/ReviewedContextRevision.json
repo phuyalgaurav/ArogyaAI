@@ -1,0 +1,46 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "revision": {
+      "minimum": 1,
+      "title": "Revision",
+      "type": "integer"
+    },
+    "context_revision": {
+      "minimum": 1,
+      "title": "Context Revision",
+      "type": "integer"
+    },
+    "reviewed_at": {
+      "format": "date-time",
+      "title": "Reviewed At",
+      "type": "string"
+    },
+    "text": {
+      "maxLength": 8000,
+      "minLength": 1,
+      "title": "Text",
+      "type": "string"
+    },
+    "selected_medicine_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Selected Medicine Id"
+    }
+  },
+  "required": [
+    "revision",
+    "context_revision",
+    "reviewed_at",
+    "text"
+  ],
+  "title": "ReviewedContextRevision",
+  "type": "object"
+}
