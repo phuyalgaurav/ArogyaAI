@@ -1,0 +1,92 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "operation": {
+      "default": "question",
+      "enum": [
+        "question",
+        "explain"
+      ],
+      "title": "Operation",
+      "type": "string"
+    },
+    "request_id": {
+      "maxLength": 100,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9_-]+$",
+      "title": "Request Id",
+      "type": "string"
+    },
+    "message": {
+      "maxLength": 2000,
+      "minLength": 1,
+      "title": "Message",
+      "type": "string"
+    },
+    "expected_context_revision": {
+      "minimum": 0,
+      "title": "Expected Context Revision",
+      "type": "integer"
+    },
+    "attachment_id": {
+      "anyOf": [
+        {
+          "pattern": "^[a-f0-9]{32}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Attachment Id"
+    },
+    "line_ids": {
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 3,
+      "title": "Line Ids",
+      "type": "array"
+    },
+    "language": {
+      "default": "en",
+      "enum": [
+        "en",
+        "ne"
+      ],
+      "title": "Language",
+      "type": "string"
+    },
+    "model_profile": {
+      "anyOf": [
+        {
+          "enum": [
+            "qwen",
+            "bonsai"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Model Profile"
+    },
+    "consent_id": {
+      "maxLength": 100,
+      "minLength": 1,
+      "title": "Consent Id",
+      "type": "string"
+    }
+  },
+  "required": [
+    "request_id",
+    "message",
+    "expected_context_revision",
+    "consent_id"
+  ],
+  "title": "ConversationTurnRequest",
+  "type": "object"
+}

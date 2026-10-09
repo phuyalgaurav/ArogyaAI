@@ -1,0 +1,123 @@
+{
+  "$defs": {
+    "DocumentContextTurn": {
+      "additionalProperties": false,
+      "properties": {
+        "question": {
+          "maxLength": 400,
+          "title": "Question",
+          "type": "string"
+        },
+        "answer_line_ids": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 3,
+          "title": "Answer Line Ids",
+          "type": "array"
+        },
+        "answer_excerpt": {
+          "default": "",
+          "maxLength": 1500,
+          "title": "Answer Excerpt",
+          "type": "string"
+        },
+        "answer_excerpt_truncated": {
+          "default": false,
+          "title": "Answer Excerpt Truncated",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "question",
+        "answer_line_ids"
+      ],
+      "title": "DocumentContextTurn",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "model_profile": {
+      "anyOf": [
+        {
+          "enum": [
+            "qwen",
+            "bonsai"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Model Profile"
+    },
+    "text": {
+      "maxLength": 8000,
+      "minLength": 1,
+      "title": "Text",
+      "type": "string"
+    },
+    "kind": {
+      "enum": [
+        "prescription",
+        "doctor_note",
+        "report"
+      ],
+      "title": "Kind",
+      "type": "string"
+    },
+    "language": {
+      "default": "en",
+      "enum": [
+        "en",
+        "ne"
+      ],
+      "title": "Language",
+      "type": "string"
+    },
+    "question": {
+      "default": "",
+      "maxLength": 400,
+      "title": "Question",
+      "type": "string"
+    },
+    "text_checked": {
+      "const": true,
+      "title": "Text Checked",
+      "type": "boolean"
+    },
+    "consent_id": {
+      "maxLength": 100,
+      "minLength": 1,
+      "title": "Consent Id",
+      "type": "string"
+    },
+    "previous_turns": {
+      "items": {
+        "$ref": "#/$defs/DocumentContextTurn"
+      },
+      "maxItems": 6,
+      "title": "Previous Turns",
+      "type": "array"
+    },
+    "focus_line_ids": {
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 3,
+      "title": "Focus Line Ids",
+      "type": "array"
+    }
+  },
+  "required": [
+    "text",
+    "kind",
+    "text_checked",
+    "consent_id"
+  ],
+  "title": "DocumentExplainRequest",
+  "type": "object"
+}

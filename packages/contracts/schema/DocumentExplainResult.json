@@ -1,0 +1,168 @@
+{
+  "$defs": {
+    "DocumentDefinition": {
+      "additionalProperties": false,
+      "properties": {
+        "term": {
+          "title": "Term",
+          "type": "string"
+        },
+        "meaning": {
+          "title": "Meaning",
+          "type": "string"
+        },
+        "source_url": {
+          "title": "Source Url",
+          "type": "string"
+        }
+      },
+      "required": [
+        "term",
+        "meaning",
+        "source_url"
+      ],
+      "title": "DocumentDefinition",
+      "type": "object"
+    },
+    "DocumentItem": {
+      "additionalProperties": false,
+      "properties": {
+        "line_id": {
+          "title": "Line Id",
+          "type": "string"
+        },
+        "quote": {
+          "title": "Quote",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "medicine",
+            "instruction",
+            "finding",
+            "follow_up",
+            "other"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "meaning": {
+          "title": "Meaning",
+          "type": "string"
+        },
+        "definitions": {
+          "items": {
+            "$ref": "#/$defs/DocumentDefinition"
+          },
+          "title": "Definitions",
+          "type": "array"
+        },
+        "check_with_professional": {
+          "title": "Check With Professional",
+          "type": "boolean"
+        },
+        "speech_text_ne": {
+          "maxLength": 300,
+          "title": "Speech Text Ne",
+          "type": "string"
+        }
+      },
+      "required": [
+        "line_id",
+        "quote",
+        "kind",
+        "meaning",
+        "definitions",
+        "check_with_professional",
+        "speech_text_ne"
+      ],
+      "title": "DocumentItem",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "status": {
+      "enum": [
+        "draft",
+        "no_match",
+        "professional_review",
+        "urgent"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "notice": {
+      "title": "Notice",
+      "type": "string"
+    },
+    "items": {
+      "items": {
+        "$ref": "#/$defs/DocumentItem"
+      },
+      "title": "Items",
+      "type": "array"
+    },
+    "answer_line_ids": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Answer Line Ids",
+      "type": "array"
+    },
+    "document_sha256": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Document Sha256",
+      "type": "string"
+    },
+    "model": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Model"
+    },
+    "revision": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Revision"
+    },
+    "speech_text_ne": {
+      "maxLength": 300,
+      "title": "Speech Text Ne",
+      "type": "string"
+    },
+    "question_method": {
+      "default": "none",
+      "enum": [
+        "none",
+        "literal_document_match",
+        "model_selection"
+      ],
+      "title": "Question Method",
+      "type": "string"
+    }
+  },
+  "required": [
+    "status",
+    "notice",
+    "items",
+    "answer_line_ids",
+    "document_sha256",
+    "speech_text_ne"
+  ],
+  "title": "DocumentExplainResult",
+  "type": "object"
+}
