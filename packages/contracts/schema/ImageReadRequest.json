@@ -1,0 +1,71 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "kind": {
+      "default": "prescription",
+      "enum": [
+        "prescription",
+        "doctor_note",
+        "report",
+        "medicine"
+      ],
+      "title": "Kind",
+      "type": "string"
+    },
+    "model_profile": {
+      "anyOf": [
+        {
+          "enum": [
+            "qwen",
+            "bonsai"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Model Profile"
+    },
+    "image_base64": {
+      "maxLength": 11184812,
+      "minLength": 16,
+      "title": "Image Base64",
+      "type": "string"
+    },
+    "language": {
+      "default": "eng",
+      "enum": [
+        "eng",
+        "nep",
+        "eng+nep"
+      ],
+      "title": "Language",
+      "type": "string"
+    },
+    "rotation": {
+      "default": 0,
+      "enum": [
+        0,
+        90,
+        180,
+        270
+      ],
+      "title": "Rotation",
+      "type": "integer"
+    },
+    "consent_id": {
+      "maxLength": 100,
+      "minLength": 1,
+      "title": "Consent Id",
+      "type": "string"
+    }
+  },
+  "required": [
+    "image_base64",
+    "consent_id"
+  ],
+  "title": "ImageReadRequest",
+  "type": "object"
+}

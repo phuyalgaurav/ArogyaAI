@@ -1,0 +1,67 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "text": {
+      "maxLength": 30000,
+      "title": "Text",
+      "type": "string"
+    },
+    "language": {
+      "enum": [
+        "eng",
+        "nep",
+        "eng+nep"
+      ],
+      "title": "Language",
+      "type": "string"
+    },
+    "status": {
+      "const": "unverified",
+      "default": "unverified",
+      "title": "Status",
+      "type": "string"
+    },
+    "engine": {
+      "maxLength": 120,
+      "title": "Engine",
+      "type": "string"
+    },
+    "revision": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Revision",
+      "type": "string"
+    },
+    "method": {
+      "anyOf": [
+        {
+          "enum": [
+            "vision",
+            "printed_ocr"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Method"
+    },
+    "warnings": {
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 8,
+      "title": "Warnings",
+      "type": "array"
+    }
+  },
+  "required": [
+    "text",
+    "language",
+    "engine",
+    "revision"
+  ],
+  "title": "ImageReadResult",
+  "type": "object"
+}
