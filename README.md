@@ -18,6 +18,14 @@ These documents describe required work; they do not certify that the core workfl
 
 Frontend: `apps/web`. Python API and inference: `services/api`. Shared schemas and generated types: `packages/contracts`. Runners and verification utilities: `scripts`.
 
+The five frontend destinations have dedicated routes: `/dashboard/`,
+`/transcription/`, `/medicines/`, `/history/` and `/chat/`. `/` also opens the
+dashboard, and older fragment bookmarks such as `/#documents` open the matching
+route. The root layout mounts `WorkspaceLayout` once for the shared navigation,
+page header, dialogs and conversation providers. Feature pages share its spacing
+and controls; in-progress drafts remain available when navigating between tasks.
+Unsubmitted drafts stay in memory and do not survive a full browser reload.
+
 The existing package scripts provide `pnpm setup`, `pnpm dev`, `pnpm dev:web`, `pnpm dev:api`, `pnpm setup:ai`, `pnpm setup:language`, and `pnpm setup:server-ocr`. Inspect `package.json` and service configuration before running setup; setup can install dependencies and download models. Python-served mode uses `pnpm build:local` followed by `pnpm start:local --lan`; physical-phone microphones need a secure browser context.
 
 Existing checks include `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:web`, `pnpm contracts:check`, and `pnpm build`. Integration scripts exist for images, documents, prescriptions and language. Passing these checks alone does not establish recognition accuracy, useful follow-ups or physical-phone voice quality.
@@ -64,3 +72,9 @@ status and remaining clinical, recognition and phone-voice acceptance work.
 
 For a separate development API, set `AROGYA_API_PROXY_URL` when running
 `pnpm dev:web`; leave `NEXT_PUBLIC_API_URL` empty to use the same-origin proxy.
+
+Document conversations now keep a reusable retrieval index and extractive
+context for each reviewed attachment. Follow-ups retrieve relevant passages with
+original line references; corrections rebuild the context, and saved history
+preserves it under the existing storage choice. See [Document RAG](docs/DOCUMENT_RAG.md)
+for storage behavior, bounds and the real-inference verification command.
