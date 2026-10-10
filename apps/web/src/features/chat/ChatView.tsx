@@ -7,6 +7,7 @@ import type {
   ReviewedQuestion,
 } from "@arogya/contracts";
 import { useEffect, useRef, useState } from "react";
+import { WorkspaceIcon } from "@/components/layout/WorkspaceIcon";
 import { ConsentBanner } from "@/components/ui/ConsentBanner";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import type { ProcessingPurpose } from "@/context/SessionContext";
@@ -70,6 +71,12 @@ export function ChatView({
     ReviewedQuestion[]
   >([]);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [requestNotice, setRequestNotice] = useState<string | null>(null);
+  const stopRequested = useRef(false);
+  const [pendingQuestion, setPendingQuestion] = useState<string | null>(null);
+  const inputField = useRef<HTMLTextAreaElement | null>(null);
+  const thread = useRef<HTMLDivElement | null>(null);
+  const followThread = useRef(true);
   const [voiceMode, setVoiceMode] = useState(false);
   const [voiceSetupOpen, setVoiceSetupOpen] = useState(false);
   const [voiceBusy, setVoiceBusy] = useState(false);
@@ -106,6 +113,32 @@ export function ChatView({
   const speechGeneration = useRef(0);
 
   const speechUrls = useRef(new Map<string, string[]>());
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: Draft changes resize the textarea, including programmatic topic selection.
+  useEffect(() => {
+    const field = inputField.current;
+    if (field) {
+      field.style.height = "auto";
+      field.style.height = `${Math.min(field.scrollHeight, 144)}px`;
+    }
+  }, [input]);
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: Message and pending-turn changes advance the thread only while the user is following its end.
+  useEffect(() => {
+    if (followThread.current && thread.current)
+      thread.current.scrollTop = thread.current.scrollHeight;
+  }, [messages.length, isSubmitting, pendingQuestion]);
+
+  function openVoice() {
+    if (locale !== "ne") onNepaliVoice?.();
+    if (
+      hasActiveConsent &&
+      permissionActive("speech_transcription") &&
+      permissionActive("speech_synthesis")
+    )
+      void enableVoiceMode();
+    else setVoiceSetupOpen(true);
+  }
 
   useEffect(
     () => () => {
@@ -370,6 +403,7 @@ export function ChatView({
     let active = true;
     const lang = ne ? "ne" : "en";
     setQuestionsState("loading");
+    setSuggestedQuestions([]);
     fetchQuestions(lang, 5)
       .then((items) => {
         if (active) {
@@ -414,6 +448,10 @@ export function ChatView({
     }
 
     if (!history.beginSending()) return;
+    stopRequested.current = false;
+    setRequestNotice(null);
+    followThread.current = true;
+    setPendingQuestion(query);
     if (questionText === undefined) {
       voiceRequest.current?.abort();
       voiceRequest.current = null;
@@ -454,8 +492,10 @@ export function ChatView({
         { ...userMsg, id: await turnUserMessageId(turn.id) },
         locale,
       );
+      setPendingQuestion(null);
       const res = turn.health;
       if (!res) throw new Error("Health response was not returned.");
+      if (res.status === "unavailable") setInput(query);
 
       const assistantMsg: HistoryMessage = {
         id: turn.id,
@@ -473,6 +513,10 @@ export function ChatView({
         void speakAnswer(assistantMsg.id, res.answer);
     } catch (err: unknown) {
       setInput(query);
+      if (stopRequested.current) {
+        setVoicePhase("ready");
+        return;
+      }
       let errorDetail = text.unavailable;
       if (err instanceof ApiError) {
         if (err.status === 401) {
@@ -503,6 +547,7 @@ export function ChatView({
       await history.append(conversationId, errorMsg, locale);
     } finally {
       history.endSending();
+      setPendingQuestion(null);
     }
   }
 
@@ -591,350 +636,374 @@ export function ChatView({
   }
 
   return (
-    <section className="chat-section" aria-labelledby="chat-heading">
-      <header className="chat-header">
-        {onNepaliVoice && (
-          <div className="chat-voice-entry">
-            <button
-              type="button"
-              className={`btn ${voiceMode ? "btn-outline" : "btn-secondary"}`}
-              onClick={() => {
-                if (locale !== "ne") onNepaliVoice();
-                if (voiceMode) return;
-                if (
-                  hasActiveConsent &&
-                  permissionActive("speech_transcription") &&
-                  permissionActive("speech_synthesis")
-                )
-                  void enableVoiceMode();
-                else setVoiceSetupOpen(true);
-              }}
-            >
-              {voiceMode
-                ? "नेपाली आवाज कुराकानी सक्रिय"
-                : "नेपालीमा बोल्नुहोस् · Nepali voice conversation"}
-            </button>
-            <span>बोल्नुहोस्, जवाफ सुन्नुहोस्।</span>
-          </div>
-        )}
-        {onLanguage && (
-          <button type="button" className="btn-secondary" onClick={onLanguage}>
-            {locale === "ne"
-              ? "नेपाली आवाज वा अनुवाद प्रयोग गर्नुहोस्"
-              : "Use Nepali voice or translation"}
-          </button>
-        )}
-        <div className="chat-header-top">
-          <div>
-            <h1 id="chat-heading">
-              {ne ? "स्वास्थ्य जिज्ञासा" : "Quick health question"}
-            </h1>
-            <p className="chat-subtitle">{text.chatSubtitle}</p>
-          </div>
-          {messages.length > 0 && (
-            <button
-              type="button"
-              className="btn btn-sm btn-outline"
-              onClick={history.newChat}
-              disabled={isSubmitting || history.syncing}
-            >
-              {ne ? "नयाँ कुराकानी" : "New chat"}
-            </button>
-          )}
-        </div>
-      </header>
-
-      <div className="chat-history-status" role="status">
-        <span>
+    <section className="chat-section" aria-labelledby="workspace-title">
+      <div className="chat-toolbar">
+        <span className="chat-save-status" role="status">
           {history.localState === "loading"
-            ? "Opening saved chats…"
+            ? ne
+              ? "कुराकानी खोल्दै…"
+              : "Opening chats…"
             : history.saving
-              ? "Saving locally…"
+              ? ne
+                ? "सुरक्षित गर्दै…"
+                : "Saving…"
               : history.localState === "ready"
-                ? "Saved on this device"
-                : "Local history is unavailable"}
+                ? ne
+                  ? "यस उपकरणमा सुरक्षित"
+                  : "Saved on this device"
+                : ne
+                  ? "स्थानीय इतिहास उपलब्ध छैन"
+                  : "Local history unavailable"}
         </span>
-        {onOpenHistory && (
-          <button type="button" className="text-button" onClick={onOpenHistory}>
-            Past chat records
-          </button>
-        )}
-      </div>
-
-      {history.error && (
-        <p className="notice" role="alert">
-          {history.error}
-        </p>
-      )}
-
-      {messages.length > 0 && (
-        <p className="history-snapshot-note">
-          Saved answers show the sources and status recorded at the time.
-          Reopening a chat does not check them again.
-        </p>
-      )}
-
-      {/* Suggested Questions */}
-      {suggestedQuestions.length > 0 && (
-        <section
-          className="suggested-questions-box"
-          aria-label={text.suggestedQuestions}
-        >
-          <span className="eyebrow">{text.suggestedQuestions}</span>
-          <div className="suggestions-list">
-            {suggestedQuestions.map((q) => (
-              <button
-                key={q.question}
-                type="button"
-                className="suggestion-pill"
-                onClick={() => handleSend(q.question)}
-                disabled={isSubmitting}
-              >
-                {q.question}
-              </button>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* Message History */}
-      <div className="message-history" role="log" aria-live="polite">
-        {messages.length === 0 ? (
-          <div className="empty-chat-placeholder">
-            <h3>{ne ? "प्रश्न सुरु गर्नुहोस्" : "Start a question"}</h3>
-            <p>
-              {suggestedQuestions.length
-                ? text.chatSubtitle
-                : questionsState === "loading"
-                  ? ne
-                    ? "समीक्षित सामग्री जाँच्दै…"
-                    : "Loading health topics…"
-                  : questionsState === "failed"
-                    ? ne
-                      ? "सामग्री जाँच्न सकिएन। जडान जाँचेर पुनः खोल्नुहोस्।"
-                      : "Could not load health topics. Check your connection and reopen this page."
-                    : text.noQuestionsAvailable}
-            </p>
-          </div>
-        ) : (
-          messages.map((m) => (
-            <article
-              key={m.id}
-              className={`chat-message chat-message-${m.sender}`}
-            >
-              <div className="message-meta">
-                <span className="message-sender">
-                  {m.sender === "user" ? "You" : text.brand}
-                </span>
-                <time className="message-time" dateTime={m.timestamp}>
-                  {new Date(m.timestamp).toLocaleString()}
-                </time>
-              </div>
-
-              <div className="message-body">
-                {m.response && (
-                  <div className="message-status-row">
-                    <StatusBadge status={m.response.status} locale={locale} />
-                  </div>
-                )}
-
-                <p className="message-text">{m.text}</p>
-                {spokenAudio[m.id]?.map((url, index) => (
-                  // biome-ignore lint/a11y/useMediaCaption: The exact spoken answer is displayed immediately above these audio controls.
-                  <audio
-                    key={url}
-                    className="chat-spoken-audio"
-                    controls
-                    preload="none"
-                    src={url}
-                    aria-label={`Nepali spoken answer, part ${index + 1}`}
-                  />
-                ))}
-
-                {m.response && renderStatusNote(m.response)}
-
-                {/* Evidence & Provenance */}
-                {m.response && m.response.evidence.length > 0 && (
-                  <div className="evidence-box">
-                    <span className="evidence-title">{text.evidenceLabel}</span>
-                    <ul className="evidence-list">
-                      {m.response.evidence.map((ev) => (
-                        <li
-                          key={`${ev.source_id}-${ev.section_id ?? ""}-${ev.version}`}
-                        >
-                          {onSelectSource ? (
-                            <button
-                              type="button"
-                              className="source-link-btn"
-                              onClick={() => onSelectSource(ev.source_id)}
-                            >
-                              {text.sourceLabel}: {ev.source_id} (v{ev.version})
-                            </button>
-                          ) : (
-                            <span>
-                              {text.sourceLabel}: {ev.source_id} (v{ev.version})
-                            </span>
-                          )}
-                          {ev.section_id && (
-                            <span className="section-tag">
-                              · {text.sectionLabel}: {ev.section_id}
-                            </span>
-                          )}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-
-                {/* Actions row: Read-Aloud & Copy */}
-                {m.sender === "assistant" && (
-                  <div className="assistant-actions-row">
-                    {snapshot?.turns?.some(
-                      (turn) =>
-                        turn.id === m.id &&
-                        turn.language === "ne" &&
-                        !turn.restored_from_client &&
-                        turn.context_revision === snapshot.context_revision,
-                    ) && (
-                      <button
-                        type="button"
-                        className="btn-read-aloud text-button"
-                        disabled={answerSpeech.busy || conversation.loading}
-                        onClick={() => void handlePlayNepaliSpeech(m.id)}
-                      >
-                        🔊 {ne ? "नेपालीमा सुन्नुहोस्" : "Listen in Nepali"}
-                      </button>
-                    )}
-                    <button
-                      type="button"
-                      className="btn-copy"
-                      onClick={() => handleCopy(m.id, m.text)}
-                    >
-                      {copiedId === m.id ? "✓ Copied" : "Copy"}
-                    </button>
-                  </div>
-                )}
-
-                {playingMessageId === m.id && answerSpeech.url && (
-                  <div className="audio-playback-bar">
-                    {/* biome-ignore lint/a11y/useMediaCaption: Spoken audio matches the displayed message text. */}
-                    <audio
-                      controls
-                      autoPlay
-                      src={answerSpeech.url || undefined}
-                      onEnded={answerSpeech.next}
-                    />
-                  </div>
-                )}
-              </div>
-            </article>
-          ))
-        )}
-
-        {isSubmitting && (
-          <div className="chat-message chat-message-assistant typing-indicator">
-            <span className="typing-dot" />
-            <span className="typing-dot" />
-            <span className="typing-dot" />
-            <span className="typing-label">{text.consulting}</span>
-          </div>
-        )}
-      </div>
-
-      {/* Active Medicine Filter Bar */}
-      {activeMedicine && (
-        <div className="active-medicine-bar" role="status">
-          <span>
-            💊 Context: <strong>{activeMedicine.canonical_name}</strong>
-          </span>
-          {onClearMedicine && (
+        <div className="chat-toolbar-actions">
+          {onOpenHistory && (
             <button
               type="button"
-              className="btn-clear-medicine"
-              onClick={onClearMedicine}
-              aria-label="Clear active medicine filter"
+              className="text-button"
+              onClick={onOpenHistory}
             >
-              ✕ Remove
+              {ne ? "पुराना कुराकानी" : "History"}
             </button>
           )}
-        </div>
-      )}
-
-      <ConsentBanner locale={locale} />
-      {answerSpeech.error && <p role="alert">{answerSpeech.error}</p>}
-      {conversation.error && <p role="alert">{conversation.error}</p>}
-
-      {voiceMode && (
-        <div className="chat-voice-panel">
-          <div className="chat-voice-meter" aria-hidden="true">
-            {[
-              { id: "a", height: 0.45 },
-              { id: "b", height: 0.75 },
-              { id: "c", height: 1 },
-              { id: "d", height: 0.75 },
-              { id: "e", height: 0.45 },
-            ].map(({ id, height }) => (
-              <span
-                key={id}
-                style={{ height: `${8 + recorder.level * 48 * height}px` }}
-              />
-            ))}
-          </div>
-          <p role="status" aria-live="polite">
-            {recorder.error ||
-              voiceMessage ||
-              (recorder.recording
-                ? "सुन्दै छु… बोल्नुहोस्।"
-                : recorder.preparing
-                  ? "माइक तयार गर्दै छु…"
-                  : voicePhase === "transcribing"
-                    ? "तपाईंको कुरा बुझ्दै छु…"
-                    : voicePhase === "thinking"
-                      ? "जवाफ तयार गर्दै छु…"
-                      : voicePhase === "speaking"
-                        ? "जवाफ सुन्नुहोस्…"
-                        : "बोल्न तलको बटन थिच्नुहोस्।")}
-          </p>
-          {lastTranscript && (
-            <div>
-              <p className="chat-voice-transcript">
-                तपाईंले भन्नुभयो: {lastTranscript}
-              </p>
-              <button
-                type="button"
-                className="text-button"
-                onClick={() => {
-                  voiceEpoch.current += 1;
-                  recorder.clear();
-                  voiceRequest.current?.abort();
-                  interruptSpeech();
-                  setVoiceBusy(false);
-                  setInput(lastTranscript);
-                  setVoicePhase("review");
-                  setVoiceMessage("शब्द सच्याएर तलको बटनबाट पठाउनुहोस्।");
-                }}
-              >
-                शब्द सच्याउनुहोस्
-              </button>
-            </div>
+          {onLanguage && (
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={onLanguage}
+            >
+              {locale === "ne"
+                ? "नेपाली आवाज वा अनुवाद प्रयोग गर्नुहोस्"
+                : "Use Nepali voice or translation"}
+            </button>
           )}
-          <p className="chat-voice-hint">
-            बोलेपछि एकछिन रोक्नुहोस्। उतारिएको पाठ जाँचेर पठाउनुहोस्।
-          </p>
           <button
             type="button"
-            className="btn btn-outline"
-            onClick={pauseVoice}
+            className="btn btn-sm btn-secondary"
+            onClick={history.newChat}
+            disabled={isSubmitting || history.syncing}
           >
-            कुराकानी रोक्नुहोस्
+            {ne ? "नयाँ कुराकानी" : "New chat"}
           </button>
         </div>
-      )}
-      {(recorder.error || voiceMessage) && !voiceMode && (
-        <p className="chat-voice-note" role="status">
-          {recorder.error || voiceMessage}
-        </p>
-      )}
+      </div>
+      <div
+        className="chat-thread"
+        ref={thread}
+        onScroll={() => {
+          const element = thread.current;
+          if (element)
+            followThread.current =
+              element.scrollHeight - element.scrollTop - element.clientHeight <
+              80;
+        }}
+      >
+        {history.error && (
+          <p className="notice" role="alert">
+            {history.error}
+          </p>
+        )}
+
+        {messages.length > 0 && (
+          <details className="history-snapshot-note">
+            <summary>{ne ? "सुरक्षित जवाफबारे" : "About saved answers"}</summary>
+            <p>
+              {ne
+                ? "सुरक्षित जवाफमा त्यसबेलाका स्रोत र अवस्था देखिन्छन्। फेरि खोल्दा पुनः जाँच हुँदैन।"
+                : "Saved answers show the sources and status recorded at the time. Reopening a chat does not check them again."}
+            </p>
+          </details>
+        )}
+
+        {/* Message History */}
+        <div className="message-history" role="log" aria-live="polite">
+          {messages.length === 0 && !pendingQuestion ? (
+            <div className="empty-chat-placeholder">
+              <WorkspaceIcon name="ask" size={28} />
+              <h2>{ne ? "के जान्न चाहनुहुन्छ?" : "What would you like to ask?"}</h2>
+              <p>
+                {ne
+                  ? "तल प्रश्न लेख्नुहोस् वा माइकबाट नेपालीमा बोल्नुहोस्।"
+                  : "Type below, or use the mic to speak in Nepali."}
+              </p>
+              {suggestedQuestions.length > 0 && (
+                <section
+                  className="suggested-questions-box"
+                  aria-label={text.suggestedQuestions}
+                >
+                  <div className="suggestions-list">
+                    {suggestedQuestions.slice(0, 3).map((q) => (
+                      <button
+                        key={q.question}
+                        type="button"
+                        className="suggestion-pill"
+                        onClick={() => {
+                          setInput(q.question);
+                          setSubmitError(null);
+                          inputField.current?.focus();
+                        }}
+                        disabled={isSubmitting}
+                      >
+                        {q.question}
+                      </button>
+                    ))}
+                  </div>
+                </section>
+              )}
+              {questionsState === "loading" && (
+                <small role="status">
+                  {ne ? "प्रश्नका उदाहरण खोज्दै…" : "Loading topic ideas…"}
+                </small>
+              )}
+              {questionsState === "failed" && (
+                <small>
+                  {ne
+                    ? "उदाहरण लोड भएनन्। आफ्नो प्रश्न लेख्न सक्नुहुन्छ।"
+                    : "Topic ideas unavailable. You can still type a question."}
+                </small>
+              )}
+            </div>
+          ) : (
+            messages.map((m) => (
+              <article
+                key={m.id}
+                className={`chat-message chat-message-${m.sender}`}
+              >
+                <div className="message-meta">
+                  <span className="message-sender">
+                    {m.sender === "user" ? (ne ? "तपाईं" : "You") : text.brand}
+                  </span>
+                  <time className="message-time" dateTime={m.timestamp}>
+                    {new Date(m.timestamp).toLocaleTimeString(
+                      ne ? "ne-NP" : "en-US",
+                      { hour: "2-digit", minute: "2-digit" },
+                    )}
+                  </time>
+                </div>
+
+                <div className="message-body">
+                  {m.response && (
+                    <div className="message-status-row">
+                      <StatusBadge status={m.response.status} locale={locale} />
+                    </div>
+                  )}
+
+                  <p className="message-text">{m.text}</p>
+                  {spokenAudio[m.id]?.map((url, index) => (
+                    // biome-ignore lint/a11y/useMediaCaption: The exact spoken answer is displayed immediately above these audio controls.
+                    <audio
+                      key={url}
+                      className="chat-spoken-audio"
+                      controls
+                      preload="none"
+                      src={url}
+                      aria-label={`Nepali spoken answer, part ${index + 1}`}
+                    />
+                  ))}
+
+                  {m.response && renderStatusNote(m.response)}
+
+                  {/* Evidence & Provenance */}
+                  {m.response && m.response.evidence.length > 0 && (
+                    <details className="evidence-box">
+                      <summary>
+                        {text.evidenceLabel} · {m.response.evidence.length}
+                      </summary>
+                      <ul className="evidence-list">
+                        {m.response.evidence.map((ev) => (
+                          <li
+                            key={`${ev.source_id}-${ev.section_id ?? ""}-${ev.version}`}
+                          >
+                            {onSelectSource ? (
+                              <button
+                                type="button"
+                                className="source-link-btn"
+                                onClick={() => onSelectSource(ev.source_id)}
+                              >
+                                {text.sourceLabel}: {ev.source_id} (v
+                                {ev.version})
+                              </button>
+                            ) : (
+                              <span>
+                                {text.sourceLabel}: {ev.source_id} (v
+                                {ev.version})
+                              </span>
+                            )}
+                            {ev.section_id && (
+                              <span className="section-tag">
+                                · {text.sectionLabel}: {ev.section_id}
+                              </span>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    </details>
+                  )}
+
+                  {/* Actions row: Read-Aloud & Copy */}
+                  {m.sender === "assistant" && (
+                    <div className="assistant-actions-row">
+                      {snapshot?.turns?.some(
+                        (turn) =>
+                          turn.id === m.id &&
+                          turn.language === "ne" &&
+                          !turn.restored_from_client &&
+                          turn.context_revision === snapshot.context_revision,
+                      ) && (
+                        <button
+                          type="button"
+                          className="btn-read-aloud text-button"
+                          disabled={answerSpeech.busy || conversation.loading}
+                          onClick={() => void handlePlayNepaliSpeech(m.id)}
+                        >
+                          🔊 {ne ? "नेपालीमा सुन्नुहोस्" : "Listen in Nepali"}
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        className="btn-copy"
+                        onClick={() => handleCopy(m.id, m.text)}
+                      >
+                        {copiedId === m.id
+                          ? ne
+                            ? "प्रतिलिपि भयो"
+                            : "Copied"
+                          : ne
+                            ? "प्रतिलिपि"
+                            : "Copy"}
+                      </button>
+                    </div>
+                  )}
+
+                  {playingMessageId === m.id && answerSpeech.url && (
+                    <div className="audio-playback-bar">
+                      {/* biome-ignore lint/a11y/useMediaCaption: Spoken audio matches the displayed message text. */}
+                      <audio
+                        controls
+                        autoPlay
+                        src={answerSpeech.url || undefined}
+                        onEnded={answerSpeech.next}
+                      />
+                    </div>
+                  )}
+                </div>
+              </article>
+            ))
+          )}
+
+          {pendingQuestion && (
+            <article className="chat-message chat-message-user">
+              <div className="message-meta">
+                <span>{ne ? "तपाईं" : "You"}</span>
+              </div>
+              <p className="message-text">{pendingQuestion}</p>
+            </article>
+          )}
+          {isSubmitting && (
+            <div className="chat-message chat-message-assistant typing-indicator">
+              <span className="typing-dot" />
+              <span className="typing-dot" />
+              <span className="typing-dot" />
+              <span className="typing-label">{text.consulting}</span>
+            </div>
+          )}
+        </div>
+
+        {/* Active Medicine Filter Bar */}
+        {activeMedicine && (
+          <div className="active-medicine-bar" role="status">
+            <span>
+              💊 Context: <strong>{activeMedicine.canonical_name}</strong>
+            </span>
+            {onClearMedicine && (
+              <button
+                type="button"
+                className="btn-clear-medicine"
+                onClick={onClearMedicine}
+                aria-label="Clear active medicine filter"
+              >
+                ✕ Remove
+              </button>
+            )}
+          </div>
+        )}
+
+        {answerSpeech.error && <p role="alert">{answerSpeech.error}</p>}
+        {conversation.error && !requestNotice && !messages.at(-1)?.error && (
+          <p role="alert">{conversation.error}</p>
+        )}
+
+        {voiceMode && (
+          <div className="chat-voice-panel">
+            <div className="chat-voice-meter" aria-hidden="true">
+              {[
+                { id: "a", height: 0.45 },
+                { id: "b", height: 0.75 },
+                { id: "c", height: 1 },
+                { id: "d", height: 0.75 },
+                { id: "e", height: 0.45 },
+              ].map(({ id, height }) => (
+                <span
+                  key={id}
+                  style={{ height: `${8 + recorder.level * 48 * height}px` }}
+                />
+              ))}
+            </div>
+            <p role="status" aria-live="polite">
+              {recorder.error ||
+                voiceMessage ||
+                (recorder.recording
+                  ? "सुन्दै छु… बोल्नुहोस्।"
+                  : recorder.preparing
+                    ? "माइक तयार गर्दै छु…"
+                    : voicePhase === "transcribing"
+                      ? "तपाईंको कुरा बुझ्दै छु…"
+                      : voicePhase === "thinking"
+                        ? "जवाफ तयार गर्दै छु…"
+                        : voicePhase === "speaking"
+                          ? "जवाफ सुन्नुहोस्…"
+                          : "बोल्न तलको बटन थिच्नुहोस्।")}
+            </p>
+            {lastTranscript && (
+              <div>
+                <p className="chat-voice-transcript">
+                  तपाईंले भन्नुभयो: {lastTranscript}
+                </p>
+                <button
+                  type="button"
+                  className="text-button"
+                  onClick={() => {
+                    voiceEpoch.current += 1;
+                    recorder.clear();
+                    voiceRequest.current?.abort();
+                    interruptSpeech();
+                    setVoiceBusy(false);
+                    setInput(lastTranscript);
+                    setVoicePhase("review");
+                    setVoiceMessage("शब्द सच्याएर तलको बटनबाट पठाउनुहोस्।");
+                  }}
+                >
+                  शब्द सच्याउनुहोस्
+                </button>
+              </div>
+            )}
+            <p className="chat-voice-hint">
+              बोलेपछि एकछिन रोक्नुहोस्। उतारिएको पाठ जाँचेर पठाउनुहोस्।
+            </p>
+            <button
+              type="button"
+              className="btn btn-outline"
+              onClick={pauseVoice}
+            >
+              कुराकानी रोक्नुहोस्
+            </button>
+          </div>
+        )}
+        {(recorder.error || voiceMessage) && !voiceMode && (
+          <p className="chat-voice-note" role="status">
+            {recorder.error || voiceMessage}
+          </p>
+        )}
+      </div>
 
       {/* Input Form */}
       <form
@@ -944,6 +1013,12 @@ export function ChatView({
           handleSend();
         }}
       >
+        <ConsentBanner locale={locale} compact />
+        {requestNotice && (
+          <p className="chat-request-notice" role="status">
+            {requestNotice}
+          </p>
+        )}
         {submitError && (
           <div className="input-error-alert" role="alert">
             <span>{submitError}</span>
@@ -962,43 +1037,35 @@ export function ChatView({
         )}
 
         <div className="input-group">
-          {voiceMode && (
-            <button
-              type="button"
-              className={
-                recorder.recording ? "btn btn-danger" : "btn btn-outline"
-              }
-              disabled={isSubmitting || recorder.preparing || voiceBusy}
-              onClick={() => {
-                setVoiceMessage(null);
-                if (recorder.recording) recorder.stop();
-                else {
-                  interruptSpeech();
-                  setVoicePhase("ready");
-                  void recorder.start();
-                }
-              }}
-            >
-              {recorder.recording
-                ? "कुरा पठाउनुहोस्"
-                : recorder.preparing
-                  ? "तयार हुँदै छ…"
-                  : voiceBusy
-                    ? "पर्खनुहोस्…"
-                    : voicePhase === "speaking"
-                      ? "रोक्नुहोस् र बोल्नुहोस्"
-                      : "बोल्नुहोस्"}
-            </button>
-          )}
-          <input
-            type="text"
+          <textarea
+            ref={inputField}
+            rows={1}
             className="chat-text-input"
             value={input}
             onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (
+                e.key === "Enter" &&
+                !e.shiftKey &&
+                !e.nativeEvent.isComposing
+              ) {
+                e.preventDefault();
+                if (
+                  !isSubmitting &&
+                  !history.syncing &&
+                  history.localState !== "loading" &&
+                  !recorder.recording &&
+                  !transcribingVoice
+                )
+                  void handleSend();
+              }
+            }}
             placeholder={
               activeMedicine
                 ? `Ask about ${activeMedicine.canonical_name}...`
-                : text.chatPlaceholder
+                : ne
+                  ? "आफ्नो प्रश्न लेख्नुहोस्…"
+                  : "Message ArogyaAI…"
             }
             maxLength={2000}
             disabled={
@@ -1008,44 +1075,110 @@ export function ChatView({
               recorder.recording ||
               transcribingVoice
             }
-            aria-label={text.chatPlaceholder}
+            aria-label={ne ? "तपाईंको प्रश्न" : "Your message"}
           />
 
           {/* Integrated Microphone Button */}
           <button
             type="button"
             className={`btn btn-secondary btn-mic ${recorder.recording ? "recording-active" : ""}`}
-            onClick={() => {
-              if (recorder.recording) {
-                recorder.stop();
-              } else if (recorder.clip) {
-                void handleTranscribeVoiceInput();
-              } else {
-                void recorder.start();
-              }
-            }}
-            title="Nepali voice question"
-          >
-            {recorder.recording
-              ? `⏹ Stop (${recorder.elapsed}s)`
-              : recorder.clip
-                ? "📝 Transcribe clip"
-                : "🎙️"}
-          </button>
-
-          <button
-            type="submit"
-            className="btn btn-primary"
             disabled={
               isSubmitting ||
               history.syncing ||
-              history.localState === "loading" ||
-              !input.trim()
+              transcribingVoice ||
+              recorder.preparing ||
+              voiceBusy
+            }
+            onClick={() => {
+              setVoiceMessage(null);
+              if (recorder.recording) {
+                recorder.stop();
+              } else if (voiceMode) {
+                interruptSpeech();
+                setVoicePhase("ready");
+                void recorder.start();
+              } else if (recorder.clip) {
+                void handleTranscribeVoiceInput();
+              } else {
+                openVoice();
+              }
+            }}
+            title={ne ? "नेपालीमा बोल्नुहोस्" : "Speak in Nepali"}
+            aria-label={
+              recorder.recording
+                ? ne
+                  ? "रेकर्डिङ रोक्नुहोस्"
+                  : "Stop recording"
+                : ne
+                  ? "नेपालीमा बोल्नुहोस्"
+                  : "Speak in Nepali"
+            }
+            aria-pressed={recorder.recording}
+          >
+            {recorder.recording ? (
+              <span aria-hidden="true">■</span>
+            ) : (
+              <WorkspaceIcon name="microphone" size={19} />
+            )}
+          </button>
+
+          <button
+            key={isSubmitting ? "stop" : "send"}
+            type={isSubmitting ? "button" : "submit"}
+            className="btn btn-primary chat-send"
+            aria-label={
+              isSubmitting
+                ? ne
+                  ? "जवाफ रोक्नुहोस्"
+                  : "Stop generating"
+                : ne
+                  ? "प्रश्न पठाउनुहोस्"
+                  : "Send message"
+            }
+            title={
+              isSubmitting
+                ? ne
+                  ? "जवाफ रोक्नुहोस्"
+                  : "Stop generating"
+                : ne
+                  ? "प्रश्न पठाउनुहोस्"
+                  : "Send message"
+            }
+            onClick={
+              isSubmitting
+                ? () => {
+                    stopRequested.current = true;
+                    setRequestNotice(
+                      ne
+                        ? "जवाफ रोकियो। प्रश्न सच्याएर फेरि पठाउन सक्नुहुन्छ।"
+                        : "Stopped. Edit your question or send it again.",
+                    );
+                    void conversation
+                      .cancel()
+                      .catch((failure) => setSubmitError(String(failure)));
+                  }
+                : undefined
+            }
+            disabled={
+              !isSubmitting &&
+              (history.syncing ||
+                history.localState === "loading" ||
+                recorder.recording ||
+                transcribingVoice ||
+                !input.trim())
             }
           >
-            {isSubmitting ? text.consulting : text.askBtn}
+            <WorkspaceIcon name={isSubmitting ? "stop" : "send"} size={20} />
           </button>
         </div>
+        <p className="chat-composer-hint">
+          {ne
+            ? "जानकारीका लागि मात्र। उपचारका लागि स्वास्थ्यकर्मीलाई सोध्नुहोस्।"
+            : "Health information only. Ask a clinician about treatment."}
+          <span>
+            {ne ? "नयाँ लाइन: Shift + Enter" : "Shift + Enter for a new line"}
+          </span>
+        </p>
 
         {recorder.recording && (
           <p className="voice-status-note" role="status">
@@ -1082,8 +1215,8 @@ export function ChatView({
               अनुमति एक घण्टाका लागि हो।
             </p>
             <p>
-              बोलिसकेपछि एकछिन रोक्नुहोस्। कुरा आफैँ पठाइन्छ र जवाफपछि माइक फेरि खुल्छ।
-              जुनसुकै बेला रोक्न सक्नुहुन्छ।
+              बोलेपछि एकछिन रोक्नुहोस्। उतारिएको पाठ जाँचेर पठाउनुहोस्। जवाफपछि माइक फेरि
+              खुल्छ। जुनसुकै बेला रोक्न सक्नुहुन्छ।
             </p>
             {(recorder.error || voiceMessage) && (
               <p className="notice" role="alert">
