@@ -37,11 +37,11 @@ function MedicineCard({
           <span>{ne ? "तस्बिर उपलब्ध छैन" : "Image unavailable"}</span>
         )}
       </div>
-      <div>
+      <div className="document-medicine-body">
         <h4>{ref.name}</h4>
         {ref.status === "found" ? (
           <>
-            <p>{ref.description}</p>
+            <p className="document-medicine-desc">{ref.description}</p>
             {ref.image_url && !imageFailed && (
               <small>{ref.image_description}</small>
             )}
@@ -54,7 +54,7 @@ function MedicineCard({
             )}
           </>
         ) : (
-          <p>
+          <p className="document-medicine-desc">
             {ref.status === "unavailable"
               ? ne
                 ? "स्रोतमा अहिले सम्पर्क हुन सकेन। फेरि प्रयास गर्नुहोस्।"
@@ -117,7 +117,10 @@ export function DocumentMedicines({
       className="document-medicines"
       aria-labelledby="document-medicines-heading"
     >
-      <h3 id="document-medicines-heading">
+      <h3
+        id="document-medicines-heading"
+        className="document-medicines-heading"
+      >
         {ne ? "कागजातमा उल्लेख भएका औषधिहरू" : "Medicines listed in this document"}
       </h3>
       <p className="storage-note">
