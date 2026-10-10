@@ -336,7 +336,12 @@ class InferenceClient:
             raise ProviderUnavailable("invalid_document_draft") from None
 
     async def bonsai_photo(self, payload):
-        from arogya_api.images.vision import VisualDraft, prepare_photo, transcription_prompt
+        from arogya_api.images.vision import (
+            VisualDraft,
+            parse_visual_draft,
+            prepare_photo,
+            transcription_prompt,
+        )
 
         try:
             photo = await asyncio.to_thread(prepare_photo, payload)
@@ -353,7 +358,7 @@ class InferenceClient:
                 1400,
                 photo,
             )
-            draft = VisualDraft.model_validate_json(text)
+            draft = parse_visual_draft(text)
             wording = "\n".join(draft.lines).strip()
             if len(wording) > 8000 or any(
                 len(line) > 500 or "\n" in line or "\r" in line for line in draft.lines

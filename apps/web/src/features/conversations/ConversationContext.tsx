@@ -22,6 +22,7 @@ import { useHistory } from "@/features/history/HistoryContext";
 import { useProfile } from "@/features/profile/ProfileContext";
 import { ApiError, createRequestId } from "@/lib/api";
 import { type ConversationAccess, conversationRequest } from "./api";
+import { pollRecognition, recognitionError } from "./recognition";
 
 type Mode = Conversation["mode"];
 type Language = Conversation["language"];
@@ -334,44 +335,32 @@ export function ConversationProvider({ children }: { children: ReactNode }) {
         },
         signal,
       );
-      const deadline = Date.now() + 165000;
-      while (job.status === "processing") {
-        if (Date.now() >= deadline)
-          throw new Error(
-            "Image recognition timed out. Cancel and try a clearer image.",
-          );
-        await new Promise<void>((resolve, reject) => {
-          const done = () => {
-            signal.removeEventListener("abort", aborted);
-            resolve();
-          };
-          const timer = setTimeout(done, 1800);
-          const aborted = () => {
-            clearTimeout(timer);
-            reject(new Error("Recognition cancelled."));
-          };
-          if (signal.aborted) aborted();
-          else signal.addEventListener("abort", aborted, { once: true });
-        });
-        job = await conversationRequest<RecognitionJob>(
-          entry.access,
-          `/${entry.snapshot.id}/recognitions/${job.id}`,
-          "GET",
-          undefined,
+      try {
+        job = await pollRecognition(
+          job,
+          (pollSignal) =>
+            conversationRequest<RecognitionJob>(
+              entry.access,
+              `/${entry.snapshot.id}/recognitions/${job.id}`,
+              "GET",
+              undefined,
+              pollSignal,
+            ),
           signal,
         );
+      } catch (failure) {
+        // Stop the owned server job when polling ends without a result.
+        void conversationRequest(
+          entry.access,
+          `/${entry.snapshot.id}/cancel`,
+          "POST",
+          undefined,
+          AbortSignal.timeout(5000),
+        ).catch(() => {});
+        throw failure;
       }
       if (job.status !== "completed")
-        throw new Error(
-          (job.error_code === "image_no_readable_text"
-            ? "No readable text found. Try a clearer photo, another reading method, or type the label."
-            : job.error_code === "image_reader_unavailable"
-              ? "Printed label reading is unavailable on this server. Try reading on your device, visual reading, or type the label."
-              : job.error_code === "image_reader_timeout"
-                ? "Label reading timed out. Try a smaller, clearer photo or type the label."
-                : job.error_code) ||
-            "Recognition failed. Retake the photo or paste the wording.",
-        );
+        throw new Error(recognitionError(job.error_code || job.status));
       entry.snapshot = await conversationRequest<Conversation>(
         entry.access,
         `/${entry.snapshot.id}`,

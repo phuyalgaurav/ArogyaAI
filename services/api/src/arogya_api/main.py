@@ -330,6 +330,12 @@ def create_app(settings=None, inference=None, language=None, images=None):
         if not (settings.web_dir / "index.html").is_file():
             raise ValueError("Build the local website with pnpm build:local first.")
         app.mount("/", StaticFiles(directory=settings.web_dir, html=True), name="website")
+    else:
+
+        @app.get("/", include_in_schema=False)
+        async def root():
+            return {"status": "ok", "service": "arogya-api"}
+
     return app
 
 

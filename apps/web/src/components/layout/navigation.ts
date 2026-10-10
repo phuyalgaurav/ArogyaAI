@@ -64,8 +64,8 @@ export function pageCopy(locale: WorkspaceLocale) {
     medicines: {
       title: ne ? "औषधि जानकारी" : "Medicine info",
       description: ne
-        ? "लेबलको फोटो राख्नुहोस् वा नाम खोज्नुहोस्। छलफल गर्नुअघि सम्भावित पहिचान जाँच्नुहोस्।"
-        : "Photograph a label or search by name. Review the possible identity before discussing it.",
+        ? "प्याकेजिङको तस्बिर खिच्नुहोस् र यो औषधि केका लागि प्रयोग गरिन्छ हेर्नुहोस्।"
+        : "Photograph a medicine package or label to identify it and see what it does.",
     },
     history: {
       title: ne ? "विगतका कुराकानीहरू" : "Past chat records",

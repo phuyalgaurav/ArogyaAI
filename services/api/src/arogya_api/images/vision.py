@@ -3,6 +3,7 @@
 import asyncio
 import base64
 import io
+import re
 import warnings
 
 import httpx
@@ -15,6 +16,16 @@ from arogya_api.images.models import ImageReadRequest, ImageReadResult
 
 class VisualDraft(Contract):
     lines: list[str] = Field(max_length=40)
+
+
+def parse_visual_draft(text: str) -> VisualDraft:
+    # Some vision models wrap otherwise valid JSON in a single Markdown fence.
+    # Accept only that complete wrapper; never extract/repair JSON from prose.
+    text = text.strip()
+    fenced = re.fullmatch(r"```(?:json)?\s*\n(.*?)\n```", text, flags=re.DOTALL)
+    if fenced:
+        text = fenced.group(1)
+    return VisualDraft.model_validate_json(text)
 
 
 def transcription_prompt(kind):
@@ -121,7 +132,7 @@ def prescription_worker_router(app, settings, gate, model_digest, service_auth):
                 if len(response.content) > 32000:
                     raise ValueError
                 result = response.json()
-                draft = VisualDraft.model_validate_json(result["message"]["content"])
+                draft = parse_visual_draft(result["message"]["content"])
                 text = "\n".join(draft.lines).strip()
                 if (
                     result.get("model") != settings.qwen_model

@@ -91,6 +91,7 @@ export function TranscriptionView({
     initialText || "",
   );
   const [transcriptionChecked, setTranscriptionChecked] = useState(false);
+  const [readingImage, setReadingImage] = useState(false);
 
   // Explanation states
   const [explaining, setExplaining] = useState(false);
@@ -152,9 +153,13 @@ export function TranscriptionView({
 
   // Audio player cleanup
 
+  const imageBusy =
+    readingImage ||
+    localOcr.state === "loading" ||
+    localOcr.state === "reading";
   const busy =
+    imageBusy ||
     conversation.loading ||
-    localOcr.state === "reading" ||
     explaining ||
     answering ||
     recorder.recording ||
@@ -219,19 +224,12 @@ export function TranscriptionView({
   }
 
   async function startServerRecognition(imageFile: File, rot: number) {
-    let currentToken = session.token;
-    if (!currentToken || session.isExpired) {
-      currentToken = await session.initSession();
-    }
-    if (!currentToken) {
-      setFileError("Could not connect to session. Check server.");
-      return;
-    }
-
-    const grant = await session.grantProcessing("image_transcription");
-    const consent = grant?.consent;
-
+    if (busy) return;
+    setReadingImage(true);
+    setFileError(null);
     try {
+      const grant = await session.grantProcessing("image_transcription");
+      const consent = grant?.consent;
       if (consent) {
         const bytes = new Uint8Array(await imageFile.arrayBuffer());
         let binary = "";
@@ -270,6 +268,8 @@ export function TranscriptionView({
           ? err.message
           : "Recognition failed. Please retry.",
       );
+    } finally {
+      setReadingImage(false);
     }
   }
 
@@ -774,14 +774,23 @@ export function TranscriptionView({
                 type="button"
                 disabled={busy}
                 onClick={() => {
-                  if (processingLocation === "device")
+                  if (processingLocation === "device") {
+                    setReadingImage(true);
+                    setFileError(null);
                     void prepareImage(file, rotation)
                       .then((image) => localOcr.read(image, "eng+nep"))
-                      .catch((error) => setFileError(String(error)));
-                  else void startServerRecognition(file, rotation);
+                      .catch((error) => setFileError(String(error)))
+                      .finally(() => setReadingImage(false));
+                  } else void startServerRecognition(file, rotation);
                 }}
               >
-                {ne ? "अनुमति दिनुहोस् र तस्बिर पढ्नुहोस्" : "Allow and read image"}
+                {imageBusy
+                  ? ne
+                    ? "तस्बिर पढ्दै…"
+                    : "Reading image…"
+                  : ne
+                    ? "अनुमति दिनुहोस् र तस्बिर पढ्नुहोस्"
+                    : "Allow and read image"}
               </button>
             </div>
           )}
@@ -865,7 +874,7 @@ export function TranscriptionView({
                   answerSpeech.stop();
                 }}
                 placeholder={
-                  busy
+                  imageBusy
                     ? ne
                       ? "सर्भरबाट पाठ उतार्दै..."
                       : "Transcribing from image..."

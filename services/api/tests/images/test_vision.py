@@ -94,3 +94,30 @@ def test_visual_decode_rotates_downsizes_and_rejects_non_images():
                 consent_id="fixture",
             )
         )
+
+
+@pytest.mark.parametrize("wrapper", ["{}", "```json\n{}\n```", "```\n{}\n```"])
+def test_visual_draft_accepts_complete_json_fence_without_changing_wording(wrapper):
+    from arogya_api.images.vision import parse_visual_draft
+
+    lines = ["Synthetic: 2.5 mg", "[illegible]", "पुनः भेट"]
+    raw = json.dumps({"lines": lines}, ensure_ascii=False)
+    assert parse_visual_draft(wrapper.replace("{}", raw)).lines == lines
+
+
+@pytest.mark.parametrize(
+    "raw",
+    [
+        'Here is the transcription: {"lines": ["example"]}',
+        '```json\n{"lines": ["example"]}',
+        '```json\n{"lines": ["example"]}\n```\nExtra explanation',
+        '```json\n{"lines": ["example"], "extra": "not allowed"}\n```',
+        '```json\n{"lines": ["example",]}\n```',
+        json.dumps({"lines": ["example"] * 41}),
+    ],
+)
+def test_visual_draft_rejects_prose_truncation_invalid_json_and_schema_violations(raw):
+    from arogya_api.images.vision import parse_visual_draft
+
+    with pytest.raises(ValueError):
+        parse_visual_draft(raw)

@@ -5,8 +5,7 @@ import type {
   HistoryMessage,
   MedicineRecord,
 } from "@arogya/contracts";
-import type React from "react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { useSession } from "@/context/SessionContext";
 import { useConversation } from "@/features/conversations/ConversationContext";
@@ -23,7 +22,7 @@ import type { ProcessingLocation } from "@/features/settings/device-specs";
 import { useModel } from "@/features/settings/ModelContext";
 import { useRecorder } from "@/features/speech/hooks/use-recorder";
 import { audioBase64 } from "@/features/speech/lib/audio";
-import { createRequestId, resolveMedicine } from "@/lib/api";
+import { createRequestId } from "@/lib/api";
 import { copy } from "@/lib/copy";
 import { stableTextEntries } from "@/lib/list-keys";
 
@@ -62,11 +61,6 @@ export function MedicineView({
   const recorder = useRecorder();
   const localOcr = useLocalOcr();
 
-  const [query, setQuery] = useDraft<string>(
-    "medicine-query",
-    initialQuery || "",
-  );
-  const [searching, setSearching] = useState<boolean>(false);
   const [candidates, setCandidates] = useState<MedicineRecord[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -110,37 +104,12 @@ export function MedicineView({
     if (localOcr.draft) setLabelText(localOcr.draft);
   }, [localOcr.draft, setLabelText]);
 
-  const searchBusy = useRef(false);
-  const executeSearch = useCallback(async (targetQuery: string) => {
-    const q = targetQuery.trim();
-    if (!q || searchBusy.current) return;
-    searchBusy.current = true;
-
-    setSearching(true);
-    setError(null);
-    try {
-      const result = await resolveMedicine(q);
-      setCandidates(result.candidates || []);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Search failed");
-      setCandidates(null);
-    } finally {
-      searchBusy.current = false;
-      setSearching(false);
-    }
-  }, []);
-
   useEffect(() => {
     if (initialQuery) {
-      setQuery(initialQuery);
-      void executeSearch(initialQuery);
+      setLabelText(initialQuery);
+      setLabelChecked(true);
     }
-  }, [initialQuery, executeSearch, setQuery]);
-
-  async function handleSearch(e?: React.FormEvent) {
-    if (e) e.preventDefault();
-    await executeSearch(query);
-  }
+  }, [initialQuery, setLabelText]);
 
   async function handleMedicinePhoto(photoFile?: File) {
     if (!photoFile) return;
@@ -150,7 +119,6 @@ export function MedicineView({
       setReadingPhoto(true);
       setError(null);
       setLabelText("");
-      setQuery("");
       setCandidates(null);
       setActiveMedicine(null);
       setLabelChecked(false);
@@ -202,7 +170,6 @@ export function MedicineView({
             "No readable label found. Try a clearer photo, use visual reading, or type the label below.",
           );
         setLabelText(label.original_text);
-        setQuery("");
         setCandidates(null);
         setActiveMedicine(null);
         setLabelChecked(false);
@@ -238,7 +205,11 @@ export function MedicineView({
       const label = reviewed.attachments?.find(
         (item) => item.id === reviewed.active_attachment_id,
       );
-      setCandidates(label?.medicine_candidates || []);
+      const matched = label?.medicine_candidates || [];
+      setCandidates(matched);
+      if (matched[0]) {
+        await handleSelectMedicineCandidate(matched[0]);
+      }
     } catch (failure) {
       setError(
         failure instanceof Error ? failure.message : "Label review failed.",
@@ -255,7 +226,7 @@ export function MedicineView({
       const currentLabel = current.attachments?.find(
         (item) => item.id === current.active_attachment_id,
       );
-      const wording = labelText || query;
+      const wording = labelText || med.canonical_name;
       if (!currentLabel)
         await conversation.text(
           "medicine",
@@ -273,6 +244,12 @@ export function MedicineView({
       );
       setActiveMedicine(med);
       if (onSelectMedicine) onSelectMedicine(med);
+
+      // Automatically explain what this medicine does
+      const questionText = ne
+        ? `${med.canonical_name} केका लागि प्रयोग गरिन्छ र यसले के काम गर्छ?`
+        : `What does ${med.canonical_name} do and what is it used for?`;
+      await handleAskMedicineFollowUp(questionText, med);
     } catch (failure) {
       setError(
         failure instanceof Error
@@ -299,9 +276,13 @@ export function MedicineView({
       );
   }, [attachment, snapshot, hasDraft, setLabelText]);
 
-  async function handleAskMedicineFollowUp(promptText?: string) {
+  async function handleAskMedicineFollowUp(
+    promptText?: string,
+    targetMed?: MedicineRecord,
+  ) {
+    const med = targetMed || activeMedicine;
     const q = (promptText || medicineFollowUp).trim();
-    if (!q || !activeMedicine || asking) return;
+    if (!q || !med || asking) return;
 
     setAsking(true);
 
@@ -326,7 +307,7 @@ export function MedicineView({
       const userMsg: HistoryMessage = {
         id: userMsgId,
         sender: "user",
-        text: `[Medicine: ${activeMedicine.canonical_name}] ${q}`,
+        text: `[Medicine: ${med.canonical_name}] ${q}`,
         timestamp: new Date().toISOString(),
       };
 
@@ -414,146 +395,63 @@ export function MedicineView({
 
   return (
     <section className="medicine-view" aria-labelledby="workspace-title">
-      <p className="storage-note" role="status">
-        {conversation.error ||
-          (conversation.loading
-            ? "Processing on the server…"
-            : ne
-              ? "जाँचिएको लेबल र कुराकानी यस उपकरणमा सुरक्षित हुन्छ।"
-              : "Reviewed labels and dialogue are saved on this device. Continuing sends that context to the server.")}
-      </p>
-      {conversation.loading && (
-        <button
-          type="button"
-          className="btn btn-outline"
-          onClick={() =>
-            void conversation
-              .cancel()
-              .catch((failure) => setError(String(failure)))
-          }
-        >
-          {ne ? "रोक्नुहोस्" : "Cancel processing"}
-        </button>
-      )}
-      <button
-        type="button"
-        className="btn btn-outline"
-        disabled={conversation.loading || asking}
-        onClick={() => {
-          history.newChat();
-          setLabelText("");
-          setActiveMedicine(null);
-          setCandidates(null);
-          setFollowUpResponses([]);
-        }}
-      >
-        {ne ? "नयाँ औषधि कुराकानी" : "New medicine conversation"}
-      </button>
-      {medicinePhoto && (
-        <div className="recognition-action">
-          {processingLocation !== "device" && (
-            <label>
-              {ne ? "लेबल पढ्ने तरिका" : "Label reading method"}
-              <select
-                value={photoMethod}
-                disabled={readingPhoto || conversation.loading}
-                onChange={(event) =>
-                  setPhotoMethod(event.target.value as "printed_ocr" | "vision")
-                }
-              >
-                <option value="printed_ocr">
-                  {ne ? "छापिएको लेबल — छिटो" : "Printed label — fast"}
-                </option>
-                <option value="vision">
-                  {ne
-                    ? "दृश्य पढाइ — ढिलो हुन सक्छ"
-                    : "Visual reading — may take longer"}
-                </option>
-              </select>
-            </label>
-          )}
-          <p>
-            {processingLocation === "device"
-              ? ne
-                ? "तस्बिर यस उपकरणमा पढिन्छ।"
-                : "Read this label on your device."
+      {/* Hidden file pickers */}
+      <input
+        ref={cameraPicker}
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        capture="environment"
+        hidden
+        onChange={(e) => setMedicinePhoto(e.target.files?.[0] || null)}
+      />
+      <input
+        ref={photoPicker}
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        hidden
+        onChange={(e) => setMedicinePhoto(e.target.files?.[0] || null)}
+      />
+
+      {/* Top Status & Conversation Bar */}
+      <div className="medicine-top-bar">
+        <p className="storage-note" role="status">
+          {conversation.error ||
+            (conversation.loading
+              ? "Processing on the server…"
               : ne
-                ? "अनुमति दिएपछि तस्बिर सर्भरमा पठाइन्छ।"
-                : "Allow reading to send this photo to the processing server."}
-          </p>
+                ? "जाँचिएको लेबल र कुराकानी यस उपकरणमा सुरक्षित हुन्छ।"
+                : "Reviewed labels and dialogue are saved on this device. Continuing sends that context to the server.")}
+        </p>
+        <div className="medicine-top-actions">
+          {conversation.loading && (
+            <button
+              type="button"
+              className="btn btn-outline"
+              onClick={() =>
+                void conversation
+                  .cancel()
+                  .catch((failure) => setError(String(failure)))
+              }
+            >
+              {ne ? "रोक्नुहोस्" : "Cancel processing"}
+            </button>
+          )}
           <button
             type="button"
-            disabled={readingPhoto || conversation.loading}
-            onClick={() => void handleMedicinePhoto(medicinePhoto)}
+            className="btn btn-outline"
+            disabled={conversation.loading || asking}
+            onClick={() => {
+              history.newChat();
+              setLabelText("");
+              setActiveMedicine(null);
+              setCandidates(null);
+              setFollowUpResponses([]);
+            }}
           >
-            {ne ? "अनुमति दिनुहोस् र लेबल पढ्नुहोस्" : "Allow and read label"}
+            {ne ? "नयाँ औषधि कुराकानी" : "New medicine conversation"}
           </button>
         </div>
-      )}
-      {recorder.error && <p role="alert">{recorder.error}</p>}
-      {localOcr.error && <p role="alert">{localOcr.error}</p>}
-      {readingPhoto && (
-        <p role="status">
-          {processingLocation === "device"
-            ? `Reading label on this device… ${localOcr.progress}%`
-            : photoMethod === "printed_ocr"
-              ? "Reading printed label…"
-              : "Reading with the visual model. This may take up to 3 minutes…"}
-        </p>
-      )}
-      {readingPhoto && processingLocation === "device" && (
-        <button type="button" onClick={() => localOcr.reset()}>
-          {ne ? "रोक्नुहोस्" : "Cancel reading"}
-        </button>
-      )}
-      <div className="notice notice-info">
-        <label htmlFor="medicine-label-review">
-          {ne
-            ? "मात्रा र एकाइसहित पूरा लेबल जाँच्नुहोस्"
-            : "Review the complete label, including strengths and units"}
-        </label>
-        <textarea
-          id="medicine-label-review"
-          value={labelText}
-          placeholder={
-            ne ? "लेबलको पाठ यहाँ लेख्नुहोस्" : "Read a photo or type the label here"
-          }
-          maxLength={8000}
-          disabled={conversation.loading}
-          onChange={(event) => {
-            setLabelText(event.target.value);
-            setLabelChecked(false);
-            setActiveMedicine(null);
-          }}
-        />
-        <label>
-          <input
-            type="checkbox"
-            checked={labelChecked}
-            onChange={(event) => setLabelChecked(event.target.checked)}
-          />{" "}
-          {ne
-            ? "मैले यो पाठ प्याकेटसँग जाँचेँ"
-            : "I checked this label against the package"}
-        </label>
-        <button
-          type="button"
-          className="btn"
-          disabled={
-            !labelText.trim() ||
-            !labelChecked ||
-            conversation.loading ||
-            readingPhoto
-          }
-          onClick={() => void handleReviewLabel()}
-        >
-          {ne
-            ? "जाँचिएको लेबलसँग मिल्ने औषधि खोज्नुहोस्"
-            : "Find matches for reviewed label"}
-        </button>
       </div>
-      {answerSpeech.error && <p role="alert">{answerSpeech.error}</p>}
-      {answerSpeech.busy && <p role="status">Preparing Nepali speech…</p>}
 
       {/* Transfer Context from Document OCR */}
       {initialQuery && onBackToImage && (
@@ -572,115 +470,211 @@ export function MedicineView({
         </div>
       )}
 
-      {/* Photo Capture & Upload Row */}
-      <div className="medicine-photo-actions-row">
-        <button
-          type="button"
-          className="btn btn-secondary"
-          onClick={() => cameraPicker.current?.click()}
-          disabled={readingPhoto}
-        >
-          📷 {ne ? "प्याकेजिङको फोटो खिच्नुहोस्" : "Take medicine photo"}
-        </button>
-        <button
-          type="button"
-          className="btn btn-secondary"
-          onClick={() => photoPicker.current?.click()}
-          disabled={readingPhoto}
-        >
-          📁 {ne ? "लेबल तस्बिर छान्नुहोस्" : "Upload label/packaging image"}
-        </button>
-        <input
-          ref={cameraPicker}
-          type="file"
-          accept="image/jpeg,image/png,image/webp"
-          capture="environment"
-          hidden
-          onChange={(e) => setMedicinePhoto(e.target.files?.[0] || null)}
-        />
-        <input
-          ref={photoPicker}
-          type="file"
-          accept="image/jpeg,image/png,image/webp"
-          hidden
-          onChange={(e) => setMedicinePhoto(e.target.files?.[0] || null)}
-        />
-      </div>
+      {answerSpeech.error && <p role="alert">{answerSpeech.error}</p>}
+      {answerSpeech.busy && <p role="status">Preparing Nepali speech…</p>}
+      {recorder.error && <p role="alert">{recorder.error}</p>}
+      {localOcr.error && <p role="alert">{localOcr.error}</p>}
 
-      {photoPreview && (
-        <div className="medicine-photo-preview-box">
-          {/* biome-ignore lint/performance/noImgElement: Blob preview must stay in browser */}
-          <img
-            src={photoPreview}
-            alt="Medicine packaging preview"
-            className="medicine-photo-thumb"
-          />
-          {readingPhoto ? (
-            <p className="reading-label">
-              🔍 {ne ? "तस्बिरबाट पाठ पढ्दै..." : "Reading text on label..."}
+      {/* Main Intake Cards Container */}
+      <div className="medicine-intake-container">
+        {/* Card 1: Read from Packaging Photo */}
+        <div className="medicine-card medicine-card-photo">
+          <div className="medicine-card-header">
+            <h3>
+              📷{" "}
+              {ne
+                ? "प्याकेजिङको तस्बिरबाट औषधि पहिचान"
+                : "Identify Medicine from Packaging Photo"}
+            </h3>
+            <p>
+              {ne
+                ? "औषधिको बट्टा, स्ट्रिप वा बोतलको फोटो खिच्नुहोस् वा अपलोड गर्नुहोस्। यसले औषधि पहिचान गरी यसको काम र असर बताउनेछ।"
+                : "Take a photo or upload an image of the medicine box, blister pack, or label to identify it and learn what it does."}
             </p>
-          ) : (
+          </div>
+
+          {/* Photo Capture & Upload Row */}
+          <div className="medicine-photo-actions-row">
             <button
               type="button"
-              className="text-button"
-              onClick={() => {
-                setMedicinePhoto(null);
-                setPhotoPreview(null);
-              }}
+              className="btn btn-secondary"
+              onClick={() => cameraPicker.current?.click()}
+              disabled={readingPhoto}
             >
-              {ne ? "तस्बिर हटाउनुहोस्" : "Remove photo"}
+              📷 {ne ? "प्याकेजिङको फोटो खिच्नुहोस्" : "Take medicine photo"}
             </button>
-          )}
-        </div>
-      )}
-
-      {/* Search Input */}
-      <form className="medicine-search-form" onSubmit={handleSearch}>
-        <div className="input-group">
-          <label htmlFor="medicine-search">
-            {ne ? "औषधिको नाम वा लेबल" : "Medicine name or label"}
-          </label>
-          <input
-            id="medicine-search"
-            type="text"
-            className="medicine-input"
-            value={query}
-            onChange={(e) => {
-              setQuery(e.target.value);
-              setLabelText("");
-              setActiveMedicine(null);
-            }}
-            placeholder={text.medicineSearchPlaceholder}
-            disabled={searching || readingPhoto}
-            aria-label={text.medicineSearchPlaceholder}
-          />
-          {query.length > 0 && (
             <button
               type="button"
-              className="btn-clear-query"
-              onClick={() => {
-                setQuery("");
-                setCandidates(null);
-              }}
-              aria-label="Clear medicine search"
+              className="btn btn-secondary"
+              onClick={() => photoPicker.current?.click()}
+              disabled={readingPhoto}
             >
-              ✕
+              📁 {ne ? "लेबल तस्बिर छान्नुहोस्" : "Upload label/packaging image"}
+            </button>
+          </div>
+
+          {/* Photo Preview Box (shows selected photo) */}
+          {photoPreview && (
+            <div className="medicine-photo-preview-box">
+              {/* biome-ignore lint/performance/noImgElement: Blob preview must stay in browser */}
+              <img
+                src={photoPreview}
+                alt="Medicine packaging preview"
+                className="medicine-photo-thumb"
+              />
+              <div className="medicine-photo-meta">
+                <span className="medicine-photo-filename">
+                  {medicinePhoto?.name || "medicine-packaging.jpg"}
+                </span>
+                {readingPhoto ? (
+                  <span className="reading-label">
+                    🔍 {ne ? "तस्बिरबाट पाठ पढ्दै..." : "Reading text on label..."}
+                  </span>
+                ) : (
+                  <button
+                    type="button"
+                    className="text-button remove-photo-btn"
+                    onClick={() => {
+                      setMedicinePhoto(null);
+                      setPhotoPreview(null);
+                    }}
+                  >
+                    {ne ? "तस्बिर हटाउनुहोस्" : "Remove photo"}
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Reading Actions (Triggered when medicinePhoto exists) */}
+          {medicinePhoto && (
+            <div className="recognition-action">
+              {processingLocation !== "device" && (
+                <label className="method-select-label">
+                  <span>{ne ? "लेबल पढ्ने तरिका:" : "Label reading method:"}</span>
+                  <select
+                    value={photoMethod}
+                    disabled={readingPhoto || conversation.loading}
+                    onChange={(event) =>
+                      setPhotoMethod(
+                        event.target.value as "printed_ocr" | "vision",
+                      )
+                    }
+                  >
+                    <option value="printed_ocr">
+                      {ne ? "छापिएको लेबल — छिटो" : "Printed label — fast"}
+                    </option>
+                    <option value="vision">
+                      {ne
+                        ? "दृश्य पढाइ — ढिलो हुन सक्छ"
+                        : "Visual reading — may take longer"}
+                    </option>
+                  </select>
+                </label>
+              )}
+              <p className="recognition-action-hint">
+                {processingLocation === "device"
+                  ? ne
+                    ? "तस्बिर यस उपकरणमा पढिन्छ (पूर्ण गोपनीयता)।"
+                    : "Read this label on your device (100% on-device)."
+                  : ne
+                    ? "अनुमति दिएपछि तस्बिर सुरक्षित रूपमा सर्भरमा पठाइन्छ।"
+                    : "Allow reading to send this photo to the processing server."}
+              </p>
+              <button
+                type="button"
+                className="btn btn-primary btn-read-action"
+                disabled={readingPhoto || conversation.loading}
+                onClick={() => void handleMedicinePhoto(medicinePhoto)}
+              >
+                {ne ? "अनुमति दिनुहोस् र लेबल पढ्नुहोस्" : "Allow and read label"}
+              </button>
+            </div>
+          )}
+
+          {readingPhoto && (
+            <p role="status" className="reading-status-banner">
+              {processingLocation === "device"
+                ? `Reading label on this device… ${localOcr.progress}%`
+                : photoMethod === "printed_ocr"
+                  ? "Reading printed label…"
+                  : "Reading with the visual model. This may take up to 3 minutes…"}
+            </p>
+          )}
+          {readingPhoto && processingLocation === "device" && (
+            <button
+              type="button"
+              className="btn btn-outline"
+              onClick={() => localOcr.reset()}
+            >
+              {ne ? "रोक्नुहोस्" : "Cancel reading"}
             </button>
           )}
-          <button
-            type="submit"
-            className="btn btn-primary"
-            disabled={searching || !query.trim()}
-          >
-            {searching ? text.medicineSearching : text.medicineLookupBtn}
-          </button>
-        </div>
-      </form>
 
-      <p className="medicine-sharing-note">
-        Search query checks verified medicine candidates in Nepal. Candidate
-        matches are unverified and require pharmacist confirmation.
-      </p>
+          {/* Review Box for Extracted or Typed Label Text */}
+          <div className="medicine-review-card">
+            <label
+              htmlFor="medicine-label-review"
+              className="review-card-title"
+            >
+              {ne
+                ? "मात्रा र एकाइसहित पूरा लेबल जाँच्नुहोस्"
+                : "Review the complete label, including strengths and units"}
+            </label>
+            <p className="review-card-desc">
+              {ne
+                ? "फोटोबाट आएको पाठ वा बट्टामा लेखिएको विवरण यहाँ रुजु गर्नुहोस्:"
+                : "Verify the extracted text from the photo or enter wording manually:"}
+            </p>
+            <textarea
+              id="medicine-label-review"
+              value={labelText}
+              placeholder={
+                ne
+                  ? "लेबलको पाठ यहाँ लेख्नुहोस्"
+                  : "Read a photo above or type the label here"
+              }
+              maxLength={8000}
+              disabled={conversation.loading}
+              onChange={(event) => {
+                setLabelText(event.target.value);
+                setLabelChecked(false);
+                setActiveMedicine(null);
+              }}
+            />
+            {/* Dedicated flex footer row: checkbox on left, button on right */}
+            <div className="medicine-review-footer">
+              <label className="medicine-checkbox-label">
+                <input
+                  type="checkbox"
+                  checked={labelChecked}
+                  onChange={(event) => setLabelChecked(event.target.checked)}
+                />
+                <span>
+                  {ne
+                    ? "मैले यो पाठ प्याकेटसँग जाँचेँ"
+                    : "I checked this label against the package"}
+                </span>
+              </label>
+              <button
+                type="button"
+                className="btn btn-primary btn-find-matches"
+                disabled={
+                  !labelText.trim() ||
+                  !labelChecked ||
+                  conversation.loading ||
+                  readingPhoto
+                }
+                onClick={() => void handleReviewLabel()}
+              >
+                {ne
+                  ? "जाँचिएको लेबलसँग मिल्ने औषधि खोज्नुहोस्"
+                  : "Find matches for reviewed label"}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* Mandatory Clinical Safety Warning Banner */}
       <div className="medicine-warning-banner" role="alert">
@@ -711,7 +705,7 @@ export function MedicineView({
               <h3>{text.noMedicineFound}</h3>
               <p>
                 No match was found in the reviewed medicine catalog for &quot;
-                {query || labelText}&quot;. The catalog may not yet include this
+                {labelText}&quot;. The catalog may not yet include this
                 medicine. Check the name with a licensed pharmacist.
               </p>
               <div className="no-candidates-actions">
@@ -802,8 +796,12 @@ export function MedicineView({
                       onClick={() => void handleSelectMedicineCandidate(med)}
                     >
                       {activeMedicine?.id === med.id
-                        ? "✓ Selected for this session"
-                        : `💊 Select ${med.canonical_name} & Ask Questions`}
+                        ? ne
+                          ? "✓ विवरण देखाइएको छ"
+                          : "✓ Showing what this medicine does"
+                        : ne
+                          ? `💊 ${med.canonical_name} को विवरण हेर्नुहोस्`
+                          : `💊 Show what ${med.canonical_name} does`}
                     </button>
                   </div>
                 </article>
@@ -813,7 +811,7 @@ export function MedicineView({
         </div>
       )}
 
-      {/* In-Session Continuous Medicine Conversation */}
+      {/* What this medicine does section */}
       {activeMedicine && (
         <section
           className="medicine-conversation-session"
@@ -821,59 +819,77 @@ export function MedicineView({
         >
           <div className="active-medicine-header-bar">
             <h3 id="med-convo-heading">
-              💬 Discussing: <strong>{activeMedicine.canonical_name}</strong>
+              💊{" "}
+              {ne
+                ? `${activeMedicine.canonical_name} को काम र प्रयोग`
+                : `What ${activeMedicine.canonical_name} Does`}
             </h3>
             <button
               type="button"
               className="text-button"
               onClick={() => setActiveMedicine(null)}
             >
-              ✕ Clear selection
+              ✕ {ne ? "हटाउनुहोस्" : "Clear selection"}
             </button>
           </div>
 
-          <div className="medicine-prompts-row">
-            {[
-              `What is ${activeMedicine.canonical_name} used for?`,
-              `What are the warnings or contraindications for ${activeMedicine.canonical_name}?`,
-              `What active ingredients are in this medicine?`,
-            ].map((promptText) => (
-              <button
-                key={promptText}
-                type="button"
-                className="suggestion-pill"
-                disabled={asking}
-                onClick={() => handleAskMedicineFollowUp(promptText)}
-              >
-                {promptText}
-              </button>
-            ))}
+          <div className="medicine-summary-card">
+            <div className="medicine-quick-info">
+              <span className="medicine-badge-active">
+                {activeMedicine.canonical_name}
+              </span>
+              <span className="medicine-ingredients-tag">
+                <strong>{text.activeIngredients}:</strong>{" "}
+                {activeMedicine.active_ingredients.join(", ")}
+              </span>
+            </div>
           </div>
 
-          {/* Render in-session responses */}
+          {asking && (
+            <div className="medicine-analyzing-banner" role="status">
+              <span className="spinner-icon">⏳</span>
+              <span>
+                {ne
+                  ? `${activeMedicine.canonical_name} को प्रयोग र असर विश्लेषण गर्दै...`
+                  : `Analyzing what ${activeMedicine.canonical_name} does...`}
+              </span>
+            </div>
+          )}
+
+          {/* Render what it does responses */}
           {followUpResponses.length > 0 && (
             <div className="medicine-responses-list">
               {followUpResponses.map((item) => (
                 <article key={item.id} className="medicine-response-card">
-                  <p className="user-q-text">
-                    <strong>Q:</strong> {item.question}
-                  </p>
-                  {item.response && (
-                    <div className="response-badge-row">
+                  <div className="response-card-header">
+                    <h4 className="medicine-qa-title">{item.question}</h4>
+                    {item.response && (
                       <StatusBadge
                         status={item.response.status}
                         locale={locale}
                       />
-                    </div>
-                  )}
-                  <p className="assistant-a-text">{item.text}</p>
-                  <button
-                    type="button"
-                    className="btn btn-sm btn-outline"
-                    onClick={() => handlePlayNepaliSpeech(item.text)}
-                  >
-                    🔊 {ne ? "नेपालीमा सुन्नुहोस्" : "Listen in Nepali"}
-                  </button>
+                    )}
+                  </div>
+                  <div className="medicine-explanation-body">
+                    <p className="assistant-a-text">{item.text}</p>
+                  </div>
+                  <div className="medicine-audio-actions">
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-outline btn-listen-nepali"
+                      disabled={answerSpeech.busy}
+                      onClick={() => void handlePlayNepaliSpeech(item.text)}
+                    >
+                      🔊{" "}
+                      {answerSpeech.busy
+                        ? ne
+                          ? "तयार हुँदैछ..."
+                          : "Preparing audio..."
+                        : ne
+                          ? "नेपालीमा सुन्नुहोस्"
+                          : "Listen in Nepali"}
+                    </button>
+                  </div>
                 </article>
               ))}
             </div>
@@ -891,12 +907,34 @@ export function MedicineView({
             </div>
           )}
 
+          {/* Quick prompts */}
+          <div className="medicine-prompts-row">
+            {[
+              ne
+                ? `${activeMedicine.canonical_name} को सावधानी वा साइड इफेक्ट के हुन्?`
+                : `What are warnings or contraindications for ${activeMedicine.canonical_name}?`,
+              ne
+                ? `${activeMedicine.canonical_name} को सही मात्रा के हो?`
+                : `What is the usual dosage for ${activeMedicine.canonical_name}?`,
+            ].map((promptText) => (
+              <button
+                key={promptText}
+                type="button"
+                className="suggestion-pill"
+                disabled={asking}
+                onClick={() => void handleAskMedicineFollowUp(promptText)}
+              >
+                {promptText}
+              </button>
+            ))}
+          </div>
+
           {/* Composer Form */}
           <form
             className="medicine-composer-form"
             onSubmit={(e) => {
               e.preventDefault();
-              handleAskMedicineFollowUp();
+              void handleAskMedicineFollowUp();
             }}
           >
             <div className="input-group">
@@ -905,7 +943,11 @@ export function MedicineView({
                 className="medicine-composer-input"
                 value={medicineFollowUp}
                 onChange={(e) => setMedicineFollowUp(e.target.value)}
-                placeholder={`Ask about ${activeMedicine.canonical_name}...`}
+                placeholder={
+                  ne
+                    ? `${activeMedicine.canonical_name} बारे थप प्रश्न सोध्नुहोस्...`
+                    : `Ask another question about ${activeMedicine.canonical_name}...`
+                }
                 disabled={asking}
               />
               <button
