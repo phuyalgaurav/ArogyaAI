@@ -1,6 +1,7 @@
 node_modules/
 .next/
 .next-production/
+.next-*/
 .venv/
 __pycache__/
 .pytest_cache/

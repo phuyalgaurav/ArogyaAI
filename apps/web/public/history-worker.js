@@ -1,5 +1,9 @@
 /* SQLite bytes are persisted on this browser, never sent by this worker. */
-importScripts("/sqlite/sql-wasm.js", "/history-sqlite.js");
+// Keep the worker and its database protocol together across cached releases.
+importScripts(
+  "/sqlite/sql-wasm.js",
+  `/history-sqlite.js${self.location.search}`,
+);
 const SQL = initSqlJs({ locateFile: (file) => `/sqlite/${file}` });
 let queue = Promise.resolve();
 

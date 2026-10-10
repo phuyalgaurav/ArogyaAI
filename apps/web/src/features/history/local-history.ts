@@ -26,7 +26,9 @@ export class LocalHistory {
     }
   >();
   constructor() {
-    this.worker = new Worker("/history-worker.js");
+    this.worker = new Worker(
+      `/history-worker.js?v=${process.env.NEXT_PUBLIC_HISTORY_VERSION}`,
+    );
     this.worker.onmessage = (event) => {
       const request = this.pending.get(event.data.id);
       if (!request) return;

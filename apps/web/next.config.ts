@@ -1,4 +1,6 @@
 import { execFileSync } from "node:child_process";
+import { createHash } from "node:crypto";
+import { readFileSync } from "node:fs";
 import type { NextConfig } from "next";
 
 let buildId = process.env.AROGYA_BUILD_ID || "development";
@@ -15,9 +17,21 @@ if (buildId === "development") {
 
 const nextConfig: NextConfig = {
   distDir: process.env.AROGYA_WEB_DIST_DIR || ".next",
-  env: { NEXT_PUBLIC_BUILD_ID: buildId },
+  env: {
+    NEXT_PUBLIC_BUILD_ID: buildId,
+    NEXT_PUBLIC_HISTORY_VERSION: createHash("sha256")
+      .update(
+        readFileSync(new URL("./public/history-worker.js", import.meta.url)),
+      )
+      .update(
+        readFileSync(new URL("./public/history-sqlite.js", import.meta.url)),
+      )
+      .digest("hex")
+      .slice(0, 16),
+  },
   poweredByHeader: false,
   reactStrictMode: true,
+  trailingSlash: true,
   ...(process.env.AROGYA_WEB_EXPORT === "1"
     ? { output: "export" as const }
     : {
