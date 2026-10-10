@@ -30,6 +30,7 @@ from arogya_api.inference.client import InferenceClient
 from arogya_api.knowledge.bundle_models import BundleManifest
 from arogya_api.knowledge.bundles import Bundles
 from arogya_api.knowledge.governance import Governance
+from arogya_api.knowledge.medicine_references import medicine_reference_router
 from arogya_api.knowledge.models import (
     MedicineRecord,
     MedicineResolution,
@@ -112,6 +113,7 @@ def create_app(settings=None, inference=None, language=None, images=None):
     app.include_router(image_router(store, sessions, image_reader, limits, provider))
     app.include_router(language_router(store, sessions, language_client, limits))
     app.include_router(document_router(store, sessions, provider, limits))
+    app.include_router(medicine_reference_router())
     app.add_middleware(
         BoundedRequestBody,
         path_limits={
