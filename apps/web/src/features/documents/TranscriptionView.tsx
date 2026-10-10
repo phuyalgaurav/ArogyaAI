@@ -30,9 +30,14 @@ import { turnUserMessageId } from "@/features/history/turn-message-id";
 import type { ProcessingLocation } from "@/features/settings/device-specs";
 import { ModelChoice } from "@/features/settings/ModelChoice";
 import { useModel } from "@/features/settings/ModelContext";
-import { useRecorder } from "@/features/speech/hooks/use-recorder";
-import { audioBase64 } from "@/features/speech/lib/audio";
+import { useSpeechInput } from "@/features/speech/hooks/use-speech-input";
 import { createRequestId } from "@/lib/api";
+import {
+  DEMO_PRESCRIPTION_TEXT,
+  getDemoExplanationResult,
+  getDemoFollowUpAnswer,
+  isDemoPrescription,
+} from "./lib/demo-prescription";
 
 interface TranscriptionViewProps {
   processingLocation: ProcessingLocation;
@@ -61,8 +66,6 @@ export function TranscriptionView({
   const activeAttachment = snapshot?.attachments?.find(
     (item) => item.id === snapshot.active_attachment_id,
   );
-  const recorder = useRecorder();
-
   // Mode and input states
   const [recognitionMethod, setRecognitionMethod] = useState<
     "vision" | "printed_ocr"
@@ -77,6 +80,19 @@ export function TranscriptionView({
     ne ? "ne" : "en",
   );
 
+  // Follow-up Q&A
+  const [question, setQuestion] = useDraft("document-question", "");
+  const [answering, setAnswering] = useState(false);
+  const [voiceInputReview, setVoiceInputReview] = useState<string | null>(null);
+
+  const speech = useSpeechInput({
+    language: explainLanguage,
+    onTranscript: (spokenText) => {
+      setQuestion(spokenText);
+      setVoiceInputReview(spokenText);
+    },
+  });
+
   // Image states
   const [file, setFile] = useDraft<File | null>("document-file", null);
   const [preview, setPreview] = useState<string | null>(null);
@@ -84,6 +100,7 @@ export function TranscriptionView({
   const [zoom, setZoom] = useState(1.0);
   const [fileError, setFileError] = useState<string | null>(null);
   const [pdfNotice, setPdfNotice] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
 
   // Transcription & review states
   const [draftText, setDraftText, hasDraft] = useDraft(
@@ -95,17 +112,10 @@ export function TranscriptionView({
 
   // Explanation states
   const [explaining, setExplaining] = useState(false);
+  const [readingDemo, setReadingDemo] = useState(false);
   const [explanationResult, setExplanationResult] =
     useState<DocumentExplainResult | null>(null);
   const [explainError, setExplainError] = useState<string | null>(null);
-
-  // Audio / Speech states
-  const [transcribingVoice, setTranscribingVoice] = useState(false);
-  const [voiceInputReview, setVoiceInputReview] = useState<string | null>(null);
-
-  // Follow-up Q&A
-  const [question, setQuestion] = useDraft("document-question", "");
-  const [answering, setAnswering] = useState(false);
 
   const pickerRef = useRef<HTMLInputElement>(null);
   const cameraRef = useRef<HTMLInputElement>(null);
@@ -156,17 +166,23 @@ export function TranscriptionView({
   const imageBusy =
     readingImage ||
     localOcr.state === "loading" ||
-    localOcr.state === "reading";
+    localOcr.state === "reading" ||
+    readingDemo;
   const busy =
     imageBusy ||
     conversation.loading ||
     explaining ||
     answering ||
-    recorder.recording ||
-    transcribingVoice;
+    speech.listening ||
+    speech.transcribing;
 
   const validText = admissibleDocument(draftText);
   const lineCount = documentLines(draftText).length;
+
+  const isUnconfirmedDisclaimer = (text: string) =>
+    text.includes("चिकित्सकीय अर्थ यस सेवाले पुष्टि गरेको छैन") ||
+    text.includes("Its clinical meaning is unconfirmed") ||
+    text.includes("कागजातबाट लिइएको पाठ हो");
 
   const labels = ne
     ? {
@@ -183,6 +199,28 @@ export function TranscriptionView({
         follow_up: "Follow-up",
         other: "Document wording",
       };
+
+  function handleDragOver(e: React.DragEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  }
+
+  function handleDragLeave(e: React.DragEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  }
+
+  function handleDrop(e: React.DragEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    const droppedFile = e.dataTransfer.files?.[0];
+    if (droppedFile) {
+      void handleFileSelected(droppedFile);
+    }
+  }
 
   async function handleFileSelected(selected?: File) {
     if (!selected || busy) return;
@@ -273,6 +311,16 @@ export function TranscriptionView({
     }
   }
 
+  async function handleReadDemoPrescription() {
+    setReadingDemo(true);
+    setFileError(null);
+    await new Promise((r) => setTimeout(r, 650));
+    setDraftText(DEMO_PRESCRIPTION_TEXT);
+    setDocKind("prescription");
+    setTranscriptionChecked(false);
+    setReadingDemo(false);
+  }
+
   useEffect(() => {
     if (localOcr.draft) {
       setDraftText(localOcr.draft);
@@ -303,6 +351,22 @@ export function TranscriptionView({
     if (!validText || !transcriptionChecked || busy) return;
     setExplaining(true);
     setExplainError(null);
+
+    if (isDemoPrescription(file, draftText)) {
+      await new Promise((r) => setTimeout(r, 550));
+      const res = getDemoExplanationResult(explainLanguage);
+      setExplanationResult(res);
+      const convId = history.currentId;
+      const assistantMsg: HistoryMessage = {
+        id: createRequestId(),
+        sender: "assistant",
+        text: res.speech_text_ne || res.notice,
+        timestamp: new Date().toISOString(),
+      };
+      await history.append(convId, assistantMsg, explainLanguage);
+      setExplaining(false);
+      return;
+    }
 
     try {
       let currentToken = session.token;
@@ -381,6 +445,30 @@ export function TranscriptionView({
     if (!q || busy || q.length > 400) return;
     setAnswering(true);
 
+    if (isDemoPrescription(file, draftText)) {
+      await new Promise((r) => setTimeout(r, 450));
+      const answer = getDemoFollowUpAnswer(q, explainLanguage);
+      const convId = history.currentId;
+      const userMsg: HistoryMessage = {
+        id: createRequestId(),
+        sender: "user",
+        text: q,
+        timestamp: new Date().toISOString(),
+      };
+      const assistantMsg: HistoryMessage = {
+        id: createRequestId(),
+        sender: "assistant",
+        text: answer,
+        timestamp: new Date().toISOString(),
+      };
+      await history.append(convId, userMsg, explainLanguage);
+      await history.append(convId, assistantMsg, explainLanguage);
+      setQuestion("");
+      setVoiceInputReview(null);
+      setAnswering(false);
+      return;
+    }
+
     try {
       let currentToken = session.token;
       if (!currentToken || session.isExpired) {
@@ -430,10 +518,8 @@ export function TranscriptionView({
         consent.id,
         model,
       );
-      const res = turn.document;
-      if (!res) throw new Error("Document answer was not returned.");
-      setExplanationResult(res);
       setQuestion("");
+      setVoiceInputReview(null);
       await history.append(
         convId,
         { ...userMsg, id: await turnUserMessageId(turn.id) },
@@ -457,40 +543,11 @@ export function TranscriptionView({
   }
 
   async function handleTranscribeSpokenAudio() {
-    if (!recorder.clip) return;
-    setTranscribingVoice(true);
-
-    let currentToken = session.token;
-    if (!currentToken) currentToken = await session.initSession();
-    if (!currentToken) {
-      setTranscribingVoice(false);
-      return;
-    }
-
-    const grant = await session.grantProcessing("speech_transcription");
-    const consent = grant?.consent;
-
-    if (!consent) {
-      setTranscribingVoice(false);
-      return;
-    }
-
-    try {
-      const b64 = await audioBase64(recorder.clip);
-      const result = await conversation.transcribe(
-        "document",
-        explainLanguage,
-        { audio_base64: b64, language: "ne", consent_id: consent.id },
-      );
-      setVoiceInputReview(result.transcription.text);
-      setQuestion(result.transcription.text);
-      recorder.clear();
-    } catch (err) {
-      setFileError(
-        err instanceof Error ? err.message : "Voice transcription failed.",
-      );
-    } finally {
-      setTranscribingVoice(false);
+    if (!speech.clip) return;
+    const text = await speech.transcribeClip();
+    if (text) {
+      setVoiceInputReview(text);
+      setQuestion(text);
     }
   }
 
@@ -500,50 +557,61 @@ export function TranscriptionView({
       aria-labelledby="workspace-title"
     >
       {localOcr.error && <p role="alert">{localOcr.error}</p>}
-      {recorder.error && <p role="alert">{recorder.error}</p>}
+      {speech.error && <p role="alert">{speech.error}</p>}
       {answerSpeech.error && <p role="alert">{answerSpeech.error}</p>}
       {answerSpeech.busy && <p role="status">Preparing Nepali speech…</p>}
 
-      <p className="storage-note" role="status">
-        {conversation.error ||
-          (conversation.loading
-            ? ne
-              ? "प्रक्रिया चल्दै छ…"
-              : "Processing on the server…"
-            : ne
-              ? "सच्याइएको पाठ र कुराकानी यस उपकरणमा सुरक्षित हुन्छ। जारी राख्दा सर्भरमा पठाइन्छ।"
-              : "Reviewed conversations are saved on this device. Unsubmitted drafts stay in this tab.")}
-      </p>
-      {conversation.loading && (
-        <button
-          type="button"
-          className="btn btn-outline"
-          onClick={() =>
-            void conversation
-              .cancel()
-              .catch((failure) => setExplainError(String(failure)))
-          }
-        >
-          {ne ? "रोक्नुहोस्" : "Cancel processing"}
-        </button>
-      )}
-      {(snapshot || draftText.trim() || file) && (
-        <button
-          type="button"
-          className="btn btn-outline"
-          disabled={busy}
-          onClick={() => {
-            history.newChat();
-            setDraftText("");
-            setExplanationResult(null);
-            setTranscriptionChecked(false);
-          }}
-        >
-          {ne ? "नयाँ कागजात कुराकानी" : "New document conversation"}
-        </button>
-      )}
+      <div className="transcription-top-bar">
+        <div className="transcription-status-pill" role="status">
+          <span
+            className={`status-dot ${conversation.loading || busy ? "dot-pulsing" : "dot-active"}`}
+            aria-hidden="true"
+          />
+          <span>
+            {conversation.error ||
+              (conversation.loading
+                ? ne
+                  ? "प्रक्रिया चल्दै छ…"
+                  : "Processing on the server…"
+                : ne
+                  ? "सच्याइएको पाठ र कुराकानी यस उपकरणमा सुरक्षित हुन्छ।"
+                  : "Reviewed conversations are safely preserved locally on this device.")}
+          </span>
+        </div>
+        <div className="transcription-top-actions">
+          {conversation.loading && (
+            <button
+              type="button"
+              className="btn btn-sm btn-outline"
+              onClick={() =>
+                void conversation
+                  .cancel()
+                  .catch((failure) => setExplainError(String(failure)))
+              }
+            >
+              {ne ? "रोक्नुहोस्" : "Cancel"}
+            </button>
+          )}
+          {(snapshot || draftText.trim() || file) && (
+            <button
+              type="button"
+              className="btn btn-sm btn-secondary btn-new-doc"
+              disabled={busy}
+              onClick={() => {
+                history.newChat();
+                setDraftText("");
+                setExplanationResult(null);
+                setTranscriptionChecked(false);
+              }}
+            >
+              <span aria-hidden="true">＋</span>
+              <span>{ne ? "नयाँ कुराकानी" : "New Conversation"}</span>
+            </button>
+          )}
+        </div>
+      </div>
       {activeAttachment?.recognition && !file && (
-        <p role="note">
+        <p role="note" className="storage-note">
           {ne
             ? "मूल तस्बिर सुरक्षित हुँदैन। तुलना गर्न पुनः छान्नुहोस्।"
             : "The original image is not saved. Choose it again to compare the wording."}
@@ -560,7 +628,7 @@ export function TranscriptionView({
           className={`btn-mode-tab ${inputMode === "image" ? "active" : ""}`}
           onClick={() => setInputMode("image")}
         >
-          {ne ? "फोटोबाट उतार्नुहोस्" : "Photo or image"}
+          📷 {ne ? "फोटो वा तस्बिर" : "Photo or Image"}
         </button>
         <button
           type="button"
@@ -568,37 +636,50 @@ export function TranscriptionView({
           className={`btn-mode-tab ${inputMode === "paste" ? "active" : ""}`}
           onClick={() => setInputMode("paste")}
         >
-          {ne ? "पाठ पेस्ट गर्नुहोस्" : "Paste document text"}
+          📝 {ne ? "पाठ पेस्ट गर्नुहोस्" : "Paste Document Text"}
         </button>
       </fieldset>
 
-      <details className="processing-options">
-        <summary>{ne ? "प्रक्रियाका विकल्पहरू" : "Processing options"}</summary>
-        <ModelChoice
-          runtime={runtime}
-          locale={locale}
-          disabled={busy}
-          onChange={() => setExplanationResult(null)}
-        />
+      <details className="transcription-options-drawer">
+        <summary>
+          ⚙️{" "}
+          {ne
+            ? "प्रक्रियाका विकल्पहरू र मोडल चयन"
+            : "Processing options & reader selection"}
+        </summary>
+        <div className="transcription-options-content">
+          <ModelChoice
+            runtime={runtime}
+            locale={locale}
+            disabled={busy}
+            onChange={() => setExplanationResult(null)}
+          />
 
-        <label htmlFor="recognition-method">
-          {ne ? "पाठ पढ्ने तरिका" : "Image reader"}
-        </label>
-        <select
-          id="recognition-method"
-          value={recognitionMethod}
-          disabled={busy}
-          onChange={(event) =>
-            setRecognitionMethod(event.target.value as "vision" | "printed_ocr")
-          }
-        >
-          <option value="vision">
-            {ne ? "हस्तलेखन र मिश्रित पाठ" : "Handwriting and mixed text"}
-          </option>
-          <option value="printed_ocr">
-            {ne ? "छापिएको पाठ" : "Printed text"}
-          </option>
-        </select>
+          <div className="transcription-field-group">
+            <label htmlFor="recognition-method">
+              {ne ? "पाठ पढ्ने तरिका (Image reader):" : "Image reader method:"}
+            </label>
+            <select
+              id="recognition-method"
+              value={recognitionMethod}
+              disabled={busy}
+              onChange={(event) =>
+                setRecognitionMethod(
+                  event.target.value as "vision" | "printed_ocr",
+                )
+              }
+            >
+              <option value="vision">
+                {ne
+                  ? "हस्तलेखन र मिश्रित पाठ (Vision model)"
+                  : "Handwriting & mixed text (Vision model)"}
+              </option>
+              <option value="printed_ocr">
+                {ne ? "छापिएको पाठ (Printed OCR)" : "Printed text (Local OCR)"}
+              </option>
+            </select>
+          </div>
+        </div>
       </details>
       {pdfNotice && (
         <div className="notice notice-warning" role="alert">
@@ -622,24 +703,20 @@ export function TranscriptionView({
           {inputMode === "image" ? (
             <div className="image-capture-stage">
               {preview ? (
-                <>
-                  <div className="preview-container">
-                    <div
-                      className="preview-wrapper"
+                <div className="preview-container">
+                  <div className="preview-wrapper">
+                    {/* biome-ignore lint/performance/noImgElement: Blob preview must stay in browser */}
+                    <img
+                      ref={photoRef}
+                      src={preview}
+                      alt="Uploaded prescription or report"
                       style={{
                         transform: `scale(${zoom})`,
-                        transformOrigin: "top left",
+                        transformOrigin: "center center",
                       }}
-                    >
-                      {/* biome-ignore lint/performance/noImgElement: Blob preview must stay in browser */}
-                      <img
-                        ref={photoRef}
-                        src={preview}
-                        alt="Uploaded prescription or report"
-                      />
-                    </div>
+                    />
                   </div>
-                  <div className="preview-controls-overlay">
+                  <div className="preview-toolbar">
                     <button
                       type="button"
                       className="btn btn-sm btn-secondary"
@@ -668,6 +745,14 @@ export function TranscriptionView({
                     </button>
                     <button
                       type="button"
+                      className="zoom-badge"
+                      title={ne ? "१००% मा फर्काउनुहोस्" : "Reset zoom to 100%"}
+                      onClick={() => setZoom(1)}
+                    >
+                      {Math.round(zoom * 100)}%
+                    </button>
+                    <button
+                      type="button"
                       className="btn btn-sm btn-outline"
                       onClick={() => {
                         setFile(null);
@@ -678,14 +763,26 @@ export function TranscriptionView({
                       {ne ? "हटाउनुहोस्" : "Remove"}
                     </button>
                   </div>
-                </>
+                </div>
               ) : (
-                <div className="dropzone-box">
+                // biome-ignore lint/a11y/useKeyWithClickEvents: Click triggers internal file picker for mouse convenience
+                <section
+                  aria-label={ne ? "कागजात अपलोड क्षेत्र" : "Document upload zone"}
+                  className={`dropzone-box ${isDragging ? "dropzone-active" : ""}`}
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
+                  onClick={(e) => {
+                    if ((e.target as HTMLElement).tagName !== "BUTTON") {
+                      pickerRef.current?.click();
+                    }
+                  }}
+                >
                   <WorkspaceIcon name="image" size={48} />
                   <p>
                     {ne
-                      ? "कागजातको स्पष्ट तस्बिर छान्नुहोस् वा खिच्नुहोस् (JPEG, PNG, WebP, ८ एमबी सम्म)"
-                      : "Clear photo of your prescription or report (JPEG, PNG, WebP up to 8 MB)"}
+                      ? "कागजातको स्पष्ट तस्बिर यहाँ तान्नुहोस् वा छान्नुहोस् (JPEG, PNG, WebP, ८ एमबी सम्म)"
+                      : "Drag & drop, choose file, or take photo of your document (JPEG, PNG, WebP up to 8 MB)"}
                   </p>
                   <div className="dropzone-actions">
                     <button
@@ -722,7 +819,7 @@ export function TranscriptionView({
                       void handleFileSelected(e.target.files?.[0])
                     }
                   />
-                </div>
+                </section>
               )}
 
               {fileError && (
@@ -760,7 +857,7 @@ export function TranscriptionView({
 
           {file && (
             <div className="recognition-action">
-              <p>
+              <p className="recognition-action-desc">
                 {processingLocation === "device"
                   ? ne
                     ? "तस्बिर यस उपकरणमा मात्र पढिन्छ। छापिएको पाठका लागि उपयुक्त।"
@@ -774,6 +871,10 @@ export function TranscriptionView({
                 type="button"
                 disabled={busy}
                 onClick={() => {
+                  if (file && isDemoPrescription(file)) {
+                    void handleReadDemoPrescription();
+                    return;
+                  }
                   if (processingLocation === "device") {
                     setReadingImage(true);
                     setFileError(null);
@@ -784,9 +885,9 @@ export function TranscriptionView({
                   } else void startServerRecognition(file, rotation);
                 }}
               >
-                {imageBusy
+                {busy
                   ? ne
-                    ? "तस्बिर पढ्दै…"
+                    ? "तस्बिर पढ्दै छ…"
                     : "Reading image…"
                   : ne
                     ? "अनुमति दिनुहोस् र तस्बिर पढ्नुहोस्"
@@ -939,32 +1040,50 @@ export function TranscriptionView({
 
                 <DocumentSpeech result={explanationResult} ne={ne} />
 
-                <div className="guide-items-list">
-                  {explanationResult.items.map((item) => (
-                    <article key={item.line_id} className="guide-card">
-                      <div className="guide-card-header">
-                        <span className="badge badge-kind">
-                          {labels[item.kind] || item.kind}
-                        </span>
-                        <span className="line-tag">{item.line_id}</span>
-                      </div>
-                      <blockquote className="guide-quote">
-                        “{item.quote}”
-                      </blockquote>
-                      <p className="guide-meaning">{item.meaning}</p>
+                {explanationResult.items.some((item) =>
+                  isUnconfirmedDisclaimer(item.meaning),
+                ) && (
+                  <div className="guide-disclaimer-notice" role="note">
+                    <p>
+                      ℹ️{" "}
+                      {ne
+                        ? "केही रेखाहरू कागजातबाट सिधै उतारिएका हुन् जसको चिकित्सकीय अर्थ पुष्टि गरिएको छैन। कृपया डाक्टर वा फर्मासिस्टसँग जाँच्नुहोस्।"
+                        : "Some lines are direct transcriptions whose clinical meaning is unconfirmed. Please verify with your doctor or pharmacist."}
+                    </p>
+                  </div>
+                )}
 
-                      {item.definitions.length > 0 && (
-                        <div className="definitions-box">
-                          {item.definitions.map((def) => (
-                            <div key={def.term} className="definition-item">
-                              <strong>{def.term}: </strong>
-                              <span>{def.meaning}</span>
-                            </div>
-                          ))}
+                <div className="guide-items-list">
+                  {explanationResult.items.map((item) => {
+                    const isBoilerplate = isUnconfirmedDisclaimer(item.meaning);
+                    return (
+                      <article key={item.line_id} className="guide-card">
+                        <div className="guide-card-header">
+                          <span className="badge badge-kind">
+                            {labels[item.kind] || item.kind}
+                          </span>
+                          <span className="line-tag">{item.line_id}</span>
                         </div>
-                      )}
-                    </article>
-                  ))}
+                        <blockquote className="guide-quote">
+                          “{item.quote}”
+                        </blockquote>
+                        {!isBoilerplate && (
+                          <p className="guide-meaning">{item.meaning}</p>
+                        )}
+
+                        {item.definitions.length > 0 && (
+                          <div className="definitions-box">
+                            {item.definitions.map((def) => (
+                              <div key={def.term} className="definition-item">
+                                <strong>{def.term}: </strong>
+                                <span>{def.meaning}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </article>
+                    );
+                  })}
                 </div>
 
                 {answerSpeech.url && (
@@ -991,6 +1110,83 @@ export function TranscriptionView({
                       ? "थप प्रश्न सोध्नुहोस्"
                       : "Ask follow-ups about this document"}
                   </h4>
+
+                  {/* Interactive Q&A conversation thread */}
+                  {snapshot?.turns?.some(
+                    (t) =>
+                      t.message !== "यस कागजातको लेखाइ व्याख्या गर्नुहोस्।" &&
+                      t.message !== "Explain the wording of this document.",
+                  ) && (
+                    <section
+                      className="document-chat-thread"
+                      aria-label={ne ? "सोधिएका प्रश्नोत्तर" : "Document Q&A"}
+                    >
+                      {snapshot.turns
+                        .filter(
+                          (t) =>
+                            t.message !== "यस कागजातको लेखाइ व्याख्या गर्नुहोस्।" &&
+                            t.message !==
+                              "Explain the wording of this document.",
+                        )
+                        .map((turn) => (
+                          <div
+                            key={turn.id}
+                            className="document-chat-bubble document-chat-assistant"
+                          >
+                            <div className="document-chat-header">
+                              <strong>{ne ? "प्रश्नोत्तर" : "Q&A"}</strong>
+                              <small>
+                                {turn.context_revision !==
+                                snapshot.context_revision
+                                  ? ne
+                                    ? "अघिल्लो पाठको जवाफ"
+                                    : "Earlier wording"
+                                  : ""}
+                              </small>
+                            </div>
+                            <p className="document-chat-question">
+                              <strong>Q: </strong>
+                              {turn.message}
+                            </p>
+                            <p
+                              className="document-chat-answer"
+                              style={{ whiteSpace: "pre-wrap" }}
+                            >
+                              {turn.answer}
+                            </p>
+                            {turn.language === "ne" &&
+                              !turn.restored_from_client &&
+                              transcriptionChecked &&
+                              turn.context_revision ===
+                                snapshot?.context_revision && (
+                                <button
+                                  type="button"
+                                  className="btn btn-sm btn-outline btn-audio-play"
+                                  disabled={busy || answerSpeech.busy}
+                                  onClick={() =>
+                                    void answerSpeech.play(turn.id)
+                                  }
+                                >
+                                  {ne ? "नेपालीमा सुन्नुहोस्" : "Listen in Nepali"}
+                                </button>
+                              )}
+                            {turn.references && turn.references.length > 0 && (
+                              <div className="document-chat-refs">
+                                {turn.references.map((ref) => (
+                                  <small
+                                    key={`${ref.attachment_id}:${ref.line_id}`}
+                                    className="ref-tag"
+                                  >
+                                    {ref.line_id}: {ref.quote}
+                                  </small>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                    </section>
+                  )}
+
                   <div className="quick-prompts-row">
                     {[
                       ne
@@ -1038,25 +1234,25 @@ export function TranscriptionView({
                       {/* Microphone Voice Action */}
                       <button
                         type="button"
-                        className={`btn btn-secondary btn-mic ${recorder.recording ? "recording-active" : ""}`}
+                        className={`btn btn-secondary btn-mic ${speech.listening ? "recording-active" : ""}`}
                         onClick={() => {
-                          if (recorder.recording) {
-                            recorder.stop();
-                          } else if (recorder.clip) {
+                          if (speech.listening) {
+                            speech.stop();
+                          } else if (speech.clip) {
                             void handleTranscribeSpokenAudio();
                           } else {
-                            void recorder.start();
+                            void speech.start();
                           }
                         }}
                         title={
                           ne
-                            ? "नेपालीमा प्रश्न बोल्नुहोस्"
-                            : "Speak question in Nepali"
+                            ? "प्रश्न बोल्नुहोस् (नेपाली / English)"
+                            : "Speak question in Nepali or English"
                         }
                       >
-                        {recorder.recording
-                          ? `${ne ? "रोक्नुहोस्" : "Stop"} (${recorder.elapsed}s)`
-                          : recorder.clip
+                        {speech.listening
+                          ? `${ne ? "रोक्नुहोस्" : "Stop"} (${speech.elapsed}s)`
+                          : speech.clip
                             ? ne
                               ? "आवाज उतार्नुहोस्"
                               : "Transcribe clip"
@@ -1077,23 +1273,30 @@ export function TranscriptionView({
                     </div>
                   </form>
 
-                  {recorder.recording && (
+                  {speech.listening && (
                     <p className="voice-status-note" role="status">
                       🔴{" "}
-                      {ne
-                        ? "नेपालीमा बोल्दै..."
-                        : "Listening in Nepali... Press Stop when finished."}
+                      {speech.interimText
+                        ? `“${speech.interimText}”`
+                        : ne
+                          ? "सुन्दैछ... बोल्नुहोस् र समाप्त भएपछि रोक्नुहोस्।"
+                          : "Listening... speak clearly into microphone."}
                     </p>
                   )}
-                  {transcribingVoice && (
+                  {speech.transcribing && (
                     <p className="voice-status-note" role="status">
                       ⏳{" "}
                       {ne
                         ? "आवाज उतारिँदै..."
-                        : "Transcribing your speech clip..."}
+                        : "Transcribing your audio clip..."}
                     </p>
                   )}
-                  {voiceInputReview && (
+                  {speech.error && (
+                    <p className="input-error-alert" role="alert">
+                      {speech.error}
+                    </p>
+                  )}
+                  {voiceInputReview && !speech.listening && (
                     <p className="voice-status-note" role="status">
                       {ne
                         ? "आवाज उतारियो। पठाउनुअघि माथिको पाठ जाँच्नुहोस् वा सच्याउनुहोस्।"
@@ -1117,39 +1320,6 @@ export function TranscriptionView({
           )}
         />
       )}
-      {snapshot?.turns?.map((turn) => (
-        <article className="notice notice-info" key={turn.id}>
-          <small>
-            {ne ? "पाठ संस्करण" : "Text revision"} {turn.context_revision}
-            {turn.context_revision !== snapshot.context_revision ||
-            !transcriptionChecked
-              ? ne
-                ? " · अघिल्लो पाठको जवाफ"
-                : " · Answer for earlier wording"
-              : ""}
-          </small>
-          <strong>{turn.message}</strong>
-          <p style={{ whiteSpace: "pre-wrap" }}>{turn.answer}</p>
-          {turn.language === "ne" &&
-            !turn.restored_from_client &&
-            transcriptionChecked &&
-            turn.context_revision === snapshot?.context_revision && (
-              <button
-                type="button"
-                className="btn btn-outline"
-                disabled={busy || answerSpeech.busy}
-                onClick={() => void answerSpeech.play(turn.id)}
-              >
-                {ne ? "नेपालीमा सुन्नुहोस्" : "Listen to this answer in Nepali"}
-              </button>
-            )}
-          {turn.references?.map((ref) => (
-            <small key={`${ref.attachment_id}:${ref.line_id}`}>
-              {ref.line_id}: {ref.quote}{" "}
-            </small>
-          ))}
-        </article>
-      ))}
     </section>
   );
 }
