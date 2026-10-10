@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { DEMO_MEDICINES } from "@/features/documents/lib/demo-prescription";
 import { getApiBaseUrl } from "@/lib/api";
 
 interface Reference {
@@ -20,18 +21,30 @@ function MedicineCard({
   reference: Reference;
   ne: boolean;
 }) {
+  const [imageSrc, setImageSrc] = useState(ref.image_url);
   const [imageFailed, setImageFailed] = useState(false);
+
+  useEffect(() => {
+    setImageSrc(ref.image_url);
+    setImageFailed(false);
+  }, [ref.image_url]);
+
   return (
     <article className="document-medicine-card">
       <div className="document-medicine-image">
-        {ref.image_url && !imageFailed ? (
-          // biome-ignore lint/performance/noImgElement: External source label images may have variable dimensions.
+        {imageSrc && !imageFailed ? (
+          // biome-ignore lint/performance/noImgElement: External and local demo label images
           <img
-            src={ref.image_url}
+            src={imageSrc}
             alt={ref.image_description}
             loading="lazy"
-            referrerPolicy="no-referrer"
-            onError={() => setImageFailed(true)}
+            onError={() => {
+              if (imageSrc.startsWith("/content/")) {
+                setImageSrc(imageSrc.replace("/content/", "/contents/"));
+              } else {
+                setImageFailed(true);
+              }
+            }}
           />
         ) : (
           <span>{ne ? "तस्बिर उपलब्ध छैन" : "Image unavailable"}</span>
@@ -81,18 +94,55 @@ export function DocumentMedicines({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(false);
   const [attempt, setAttempt] = useState(0);
-  // biome-ignore lint/correctness/useExhaustiveDependencies: Serialized names provide a stable request dependency.
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: Serialized names and locale provide stable dependencies
   useEffect(() => {
     const controller = new AbortController();
     const queries: string[] = JSON.parse(key);
     setResults([]);
     setError(false);
     if (!queries.length) return;
+
+    // Check for local demo medicines first
+    const localMatches: Reference[] = [];
+    const remoteQueries: string[] = [];
+
+    for (const q of queries) {
+      const lower = q.toLowerCase();
+      let matchedKey: string | null = null;
+      if (lower.includes("augmentin")) matchedKey = "augmentin";
+      else if (lower.includes("enzoflam")) matchedKey = "enzoflam";
+      else if (lower.includes("pan-d") || lower.includes("pand"))
+        matchedKey = "pan-d";
+      else if (lower.includes("hexigel")) matchedKey = "hexigel";
+
+      if (matchedKey && DEMO_MEDICINES[matchedKey]) {
+        const item = DEMO_MEDICINES[matchedKey];
+        localMatches.push({
+          name: q,
+          status: "found",
+          title: item.title,
+          description: ne ? item.description_ne : item.description_en,
+          image_url: item.image_url,
+          image_description: item.image_description,
+          source_url: item.source_url,
+        });
+      } else {
+        remoteQueries.push(q);
+      }
+    }
+
+    if (remoteQueries.length === 0) {
+      setResults(localMatches);
+      setBusy(false);
+      return;
+    }
+
     setBusy(true);
     void fetch(`${getApiBaseUrl()}/api/v1/medicines/references`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ names: queries }),
+      body: JSON.stringify({ names: remoteQueries }),
       signal: controller.signal,
       credentials: "omit",
     })
@@ -101,16 +151,25 @@ export function DocumentMedicines({
         return response.json() as Promise<Reference[]>;
       })
       .then((data) => {
-        if (!controller.signal.aborted) setResults(data);
+        if (!controller.signal.aborted) {
+          setResults([...localMatches, ...data]);
+        }
       })
       .catch(() => {
-        if (!controller.signal.aborted) setError(true);
+        if (!controller.signal.aborted) {
+          if (localMatches.length > 0) {
+            setResults(localMatches);
+          } else {
+            setError(true);
+          }
+        }
       })
       .finally(() => {
         if (!controller.signal.aborted) setBusy(false);
       });
+
     return () => controller.abort();
-  }, [key, attempt]);
+  }, [key, attempt, ne]);
   if (!names.length) return null;
   return (
     <section

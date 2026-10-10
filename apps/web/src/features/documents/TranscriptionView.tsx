@@ -32,6 +32,12 @@ import { ModelChoice } from "@/features/settings/ModelChoice";
 import { useModel } from "@/features/settings/ModelContext";
 import { useSpeechInput } from "@/features/speech/hooks/use-speech-input";
 import { createRequestId } from "@/lib/api";
+import {
+  DEMO_PRESCRIPTION_TEXT,
+  getDemoExplanationResult,
+  getDemoFollowUpAnswer,
+  isDemoPrescription,
+} from "./lib/demo-prescription";
 
 interface TranscriptionViewProps {
   processingLocation: ProcessingLocation;
@@ -105,6 +111,7 @@ export function TranscriptionView({
 
   // Explanation states
   const [explaining, setExplaining] = useState(false);
+  const [readingDemo, setReadingDemo] = useState(false);
   const [explanationResult, setExplanationResult] =
     useState<DocumentExplainResult | null>(null);
   const [explainError, setExplainError] = useState<string | null>(null);
@@ -158,6 +165,7 @@ export function TranscriptionView({
   const busy =
     conversation.loading ||
     localOcr.state === "reading" ||
+    readingDemo ||
     explaining ||
     answering ||
     speech.listening ||
@@ -303,6 +311,16 @@ export function TranscriptionView({
     }
   }
 
+  async function handleReadDemoPrescription() {
+    setReadingDemo(true);
+    setFileError(null);
+    await new Promise((r) => setTimeout(r, 650));
+    setDraftText(DEMO_PRESCRIPTION_TEXT);
+    setDocKind("prescription");
+    setTranscriptionChecked(false);
+    setReadingDemo(false);
+  }
+
   useEffect(() => {
     if (localOcr.draft) {
       setDraftText(localOcr.draft);
@@ -333,6 +351,22 @@ export function TranscriptionView({
     if (!validText || !transcriptionChecked || busy) return;
     setExplaining(true);
     setExplainError(null);
+
+    if (isDemoPrescription(file, draftText)) {
+      await new Promise((r) => setTimeout(r, 550));
+      const res = getDemoExplanationResult(explainLanguage);
+      setExplanationResult(res);
+      const convId = history.currentId;
+      const assistantMsg: HistoryMessage = {
+        id: createRequestId(),
+        sender: "assistant",
+        text: res.speech_text_ne || res.notice,
+        timestamp: new Date().toISOString(),
+      };
+      await history.append(convId, assistantMsg, explainLanguage);
+      setExplaining(false);
+      return;
+    }
 
     try {
       let currentToken = session.token;
@@ -410,6 +444,30 @@ export function TranscriptionView({
     const q = (followUpText || question).trim();
     if (!q || busy || q.length > 400) return;
     setAnswering(true);
+
+    if (isDemoPrescription(file, draftText)) {
+      await new Promise((r) => setTimeout(r, 450));
+      const answer = getDemoFollowUpAnswer(q, explainLanguage);
+      const convId = history.currentId;
+      const userMsg: HistoryMessage = {
+        id: createRequestId(),
+        sender: "user",
+        text: q,
+        timestamp: new Date().toISOString(),
+      };
+      const assistantMsg: HistoryMessage = {
+        id: createRequestId(),
+        sender: "assistant",
+        text: answer,
+        timestamp: new Date().toISOString(),
+      };
+      await history.append(convId, userMsg, explainLanguage);
+      await history.append(convId, assistantMsg, explainLanguage);
+      setQuestion("");
+      setVoiceInputReview(null);
+      setAnswering(false);
+      return;
+    }
 
     try {
       let currentToken = session.token;
@@ -813,6 +871,10 @@ export function TranscriptionView({
                 type="button"
                 disabled={busy}
                 onClick={() => {
+                  if (file && isDemoPrescription(file)) {
+                    void handleReadDemoPrescription();
+                    return;
+                  }
                   if (processingLocation === "device")
                     void prepareImage(file, rotation)
                       .then((image) => localOcr.read(image, "eng+nep"))
