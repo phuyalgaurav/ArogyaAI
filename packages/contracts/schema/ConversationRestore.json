@@ -67,6 +67,12 @@
     "Conversation": {
       "additionalProperties": false,
       "properties": {
+        "user_context": {
+          "default": "",
+          "maxLength": 4000,
+          "title": "User Context",
+          "type": "string"
+        },
         "schema_version": {
           "const": 1,
           "default": 1,

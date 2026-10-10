@@ -20,6 +20,7 @@ from arogya_api.core.models import ConsentGrant, ConsentRequest, SessionResponse
 from arogya_api.core.privacy import BoundedRequestBody
 from arogya_api.core.settings import Settings
 from arogya_api.documents.service import document_router
+from arogya_api.health import references as health_references
 from arogya_api.health.models import ChatRequest
 from arogya_api.health.service import answer
 from arogya_api.history.routes import history_router
@@ -259,6 +260,16 @@ def create_app(settings=None, inference=None, language=None, images=None):
         manifests = bundles.available()
         return {
             **store.manifest(),
+            "public_education_sources": [
+                {
+                    "source_id": s.source_id,
+                    "title": s.title,
+                    "language": s.language,
+                    "version": s.version,
+                    "review_status": s.review_status,
+                }
+                for s in health_references.sources()
+            ],
             "offline_bundle_available": bool(manifests),
             "bundles": manifests,
         }
@@ -281,11 +292,22 @@ def create_app(settings=None, inference=None, language=None, images=None):
         )
 
     @app.get("/api/v1/knowledge/questions", response_model=list[ReviewedQuestion])
-    def questions(language: Language = "en", limit: int = Query(default=50, ge=1, le=100)):
-        return store.questions(language, limit)
+    def questions(
+        language: Language = "en",
+        limit: int = Query(default=50, ge=1, le=100),
+        include_public: bool = False,
+    ):
+        return (
+            health_references.available_questions(store, language, limit)
+            if include_public
+            else store.questions(language, limit)
+        )
 
     @app.get("/api/v1/knowledge/sources/{source_id}")
     def source(source_id: str):
+        public = health_references.source_get(source_id)
+        if public:
+            return public
         result = store.source_get(source_id)
         if not store.source_eligible(result):
             raise HTTPException(404, "reviewed_source_not_found")

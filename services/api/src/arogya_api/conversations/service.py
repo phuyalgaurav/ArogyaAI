@@ -27,6 +27,7 @@ from arogya_api.documents.models import (
 )
 from arogya_api.documents.service import explain
 from arogya_api.health.models import ChatRequest
+from arogya_api.health.references import available_questions
 from arogya_api.health.service import answer
 from arogya_api.inference.errors import ProviderUnavailable
 from arogya_api.knowledge.store import normalized_question
@@ -244,7 +245,11 @@ class Conversations:
     async def resolve_question(self, conversation, payload, medicine):
         if precheck(payload.message):
             return payload.message
-        questions = self.metadata.questions(payload.language, 100)
+        questions = (
+            self.metadata.questions(payload.language, 100)
+            if medicine
+            else available_questions(self.metadata, payload.language)
+        )
         if medicine:
             questions = [q for q in questions if q.source_id in medicine.source_ids]
         for question in questions:
@@ -272,6 +277,7 @@ class Conversations:
                     message=payload.message,
                     language=payload.language,
                     previous_questions=previous,
+                    user_context=conversation.user_context,
                     candidates=candidates,
                     model_profile=payload.model_profile,
                 )
@@ -339,6 +345,7 @@ class Conversations:
                             model_profile=payload.model_profile,
                             consent_id=payload.consent_id,
                             previous_turns=previous,
+                            user_context=conversation.user_context,
                             focus_line_ids=payload.line_ids,
                         ),
                         self.provider,
@@ -399,6 +406,8 @@ class Conversations:
                         language=payload.language,
                         medicine_id=medicine.id if medicine else None,
                         model_profile=payload.model_profile,
+                        user_context=conversation.user_context,
+                        include_user_context=bool(conversation.user_context),
                         server_processing_consent_id=payload.consent_id,
                     ),
                     session,

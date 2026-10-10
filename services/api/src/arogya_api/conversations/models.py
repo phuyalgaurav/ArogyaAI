@@ -15,6 +15,8 @@ RequestId = Annotated[str, Field(min_length=1, max_length=100, pattern=r"^[A-Za-
 
 
 class ConversationCreate(Contract):
+    user_context: str = Field(default="", max_length=4000)
+    include_user_context: bool = False
     id: ResourceId | None = None
     mode: Literal["document", "medicine", "health"]
     language: Literal["en", "ne"] = "en"
@@ -24,6 +26,8 @@ class ConversationCreate(Contract):
 
     @model_validator(mode="after")
     def storage_permission(self):
+        if self.user_context and not self.include_user_context:
+            raise ValueError("Explicit permission to include saved user context is required")
         if self.storage == "server_history" and not self.allow_context_storage:
             raise ValueError(
                 "Explicit permission to store messages and reviewed context is required"
@@ -80,6 +84,7 @@ class ConversationTurn(Contract):
 
 
 class Conversation(Contract):
+    user_context: str = Field(default="", max_length=4000)
     schema_version: Literal[1] = 1
     id: ResourceId
     mode: Literal["document", "medicine", "health"]

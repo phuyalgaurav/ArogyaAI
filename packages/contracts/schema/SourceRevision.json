@@ -101,7 +101,8 @@
             "pending",
             "approved",
             "withdrawn",
-            "test_fixture"
+            "test_fixture",
+            "public_reference"
           ],
           "title": "Review Status",
           "type": "string"

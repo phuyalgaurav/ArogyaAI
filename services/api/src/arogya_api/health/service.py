@@ -5,6 +5,7 @@ from fastapi import HTTPException
 
 from arogya_api.core.contracts import ArogyaResponse, Evidence, Provenance, Safety
 from arogya_api.core.safety import POLICY_VERSION, precheck, rule_intent
+from arogya_api.health import references
 from arogya_api.inference.errors import ProviderUnavailable
 from arogya_api.inference.models import GenerateRequest
 from arogya_api.knowledge.store import normalized_question
@@ -82,6 +83,10 @@ async def answer(request, owner, store, inference):
             )
         source_ids = medicine.source_ids
     sentences = store.retrieve(request.message, request.language, source_ids)
+    public_reference = False
+    if not sentences and not request.medicine_id:
+        sentences = references.retrieve(request.message, request.language)
+        public_reference = bool(sentences)
     if not sentences:
         if intent_rule == "document_scan":
             return response(
@@ -89,13 +94,14 @@ async def answer(request, owner, store, inference):
             )
         if not store.questions(request.language, 1):
             text = (
-                "नेपालीमा समीक्षित स्वास्थ्य प्रश्न र स्रोत उपलब्ध छैनन्। "
-                "समीक्षित सामग्री थपिएपछि मात्र यहाँ स्वास्थ्य प्रश्नको उत्तर दिन सकिन्छ।"
+                "यो प्रश्नको उत्तर दिने स्रोत अहिले उपलब्ध छैन। "
+                "ज्वरो, निर्जलीकरण, स्वस्थ आहार, व्यायाम वा एन्टिबायोटिकबारे सामान्य प्रश्न सोध्नुहोस्।"
                 if request.language == "ne"
-                else "The reviewed health library has no available questions in English yet. "
-                "Medical answers are unavailable until reviewed content is added."
+                else "I don't have a source-backed answer to this question yet. "
+                "Try a general question about fever, dehydration, healthy eating, physical "
+                "activity or antibiotics, or ask a health professional for individual advice."
             )
-            result = response(request, "unavailable", text, "reviewed_library_empty")
+            result = response(request, "unavailable", text, "no_matching_health_reference")
             result.language = request.language
             return result
         if intent_rule == "medicine_info" and not request.medicine_id:
@@ -137,6 +143,7 @@ async def answer(request, owner, store, inference):
                 message=request.message,
                 language=request.language,
                 sentences=sentences,
+                user_context=request.user_context,
                 model_profile=request.model_profile,
             )
         )
@@ -172,6 +179,8 @@ async def answer(request, owner, store, inference):
         )
     chosen = [known[sentence_id] for sentence_id in selection.sentence_ids]
     current = store.retrieve(request.message, request.language, source_ids)
+    if public_reference:
+        current = references.retrieve(request.message, request.language)
     eligible_now = {(s.source_id, s.version, s.section_id, s.text) for s in current}
     if any((s.source_id, s.version, s.section_id, s.text) not in eligible_now for s in chosen):
         return response(
@@ -182,9 +191,13 @@ async def answer(request, owner, store, inference):
             **routing,
         )
     for sentence in chosen:
-        source = store.source_get(sentence.source_id)
+        source = (
+            references.source_get(sentence.source_id)
+            if public_reference
+            else store.source_get(sentence.source_id)
+        )
         if (
-            not store.source_eligible(source, request.language)
+            not (source if public_reference else store.source_eligible(source, request.language))
             or source.version != sentence.version
         ):
             return response(
@@ -223,7 +236,7 @@ async def answer(request, owner, store, inference):
         request,
         "answered",
         "\n\n".join(sentence.text for sentence in chosen),
-        "extractive_evidence_validated",
+        "public_source_education" if public_reference else "extractive_evidence_validated",
         evidence=evidence,
         model=result.model,
         digest=result.digest,

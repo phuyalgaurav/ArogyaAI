@@ -88,6 +88,7 @@ def conversation_router(contexts, service, metadata, sessions, history, limits, 
             Conversation(
                 id=payload.id or uuid.uuid4().hex,
                 mode=payload.mode,
+                user_context=payload.user_context if payload.include_user_context else "",
                 title=payload.title,
                 language=payload.language,
                 storage=payload.storage,

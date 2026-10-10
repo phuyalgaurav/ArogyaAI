@@ -1,6 +1,17 @@
 {
   "additionalProperties": false,
   "properties": {
+    "user_context": {
+      "default": "",
+      "maxLength": 4000,
+      "title": "User Context",
+      "type": "string"
+    },
+    "include_user_context": {
+      "default": false,
+      "title": "Include User Context",
+      "type": "boolean"
+    },
     "model_profile": {
       "anyOf": [
         {

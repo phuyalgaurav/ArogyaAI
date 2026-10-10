@@ -80,6 +80,7 @@ async def explain(payload, provider):
     if not set(payload.focus_line_ids) <= {line.id for line in lines}:
         raise HTTPException(422, "unknown_document_line")
     request = DocumentSelectionRequest(
+        user_context=payload.user_context,
         kind=payload.kind,
         question=payload.question,
         lines=lines,

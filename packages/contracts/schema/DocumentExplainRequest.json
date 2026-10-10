@@ -38,6 +38,12 @@
   },
   "additionalProperties": false,
   "properties": {
+    "user_context": {
+      "default": "",
+      "maxLength": 4000,
+      "title": "User Context",
+      "type": "string"
+    },
     "model_profile": {
       "anyOf": [
         {

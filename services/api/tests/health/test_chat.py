@@ -104,7 +104,7 @@ def test_empty_reviewed_library_reports_content_unavailability(backend, language
     result = client.post("/api/v1/chat", headers=headers, json=payload).json()
     assert result["status"] == "unavailable"
     assert result["language"] == language
-    assert result["safety"]["rule_ids"] == ["reviewed_library_empty"]
+    assert result["safety"]["rule_ids"] == ["no_matching_health_reference"]
     assert result["evidence"] == [] and inference.calls == []
     assert "clarify" not in result["answer"].lower()
     assert result["provenance"]["model"] is None
@@ -114,7 +114,7 @@ def test_missing_reviewed_language_does_not_claim_question_is_vague(backend):
     client, _, inference, headers, _, payload = backend
     payload["language"] = "ne"
     result = client.post("/api/v1/chat", headers=headers, json=payload).json()
-    assert result["safety"]["rule_ids"] == ["reviewed_library_empty"]
+    assert result["safety"]["rule_ids"] == ["no_matching_health_reference"]
     assert result["status"] == "unavailable" and inference.calls == []
 
 

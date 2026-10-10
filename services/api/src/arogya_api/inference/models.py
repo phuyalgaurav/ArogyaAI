@@ -7,6 +7,7 @@ from arogya_api.knowledge.models import EvidenceSentence
 
 
 class GenerateRequest(Contract):
+    user_context: str = Field(default="", max_length=4000)
     model_profile: Literal["qwen", "bonsai"] | None = None
     message: str = Field(min_length=1, max_length=2000)
     language: Language

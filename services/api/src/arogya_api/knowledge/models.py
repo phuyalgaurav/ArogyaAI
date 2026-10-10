@@ -21,7 +21,7 @@ class KnowledgeSource(Contract):
     language: Language
     source_url: HttpUrl
     license: str = Field(min_length=1, max_length=500)
-    review_status: Literal["pending", "approved", "withdrawn", "test_fixture"]
+    review_status: Literal["pending", "approved", "withdrawn", "test_fixture", "public_reference"]
     reviewed_by: str | None = None
     reviewed_at: AwareDatetime | None = None
     valid_until: AwareDatetime

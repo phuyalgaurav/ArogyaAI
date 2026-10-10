@@ -18,6 +18,7 @@ class DocumentContextTurn(Contract):
 
 
 class DocumentExplainRequest(Contract):
+    user_context: str = Field(default="", max_length=4000)
     model_profile: Literal["qwen", "bonsai"] | None = None
     text: str = Field(min_length=1, max_length=8000)
     kind: DocumentKind
@@ -42,6 +43,7 @@ class DocumentLine(Contract):
 
 
 class DocumentSelectionRequest(Contract):
+    user_context: str = Field(default="", max_length=4000)
     model_profile: Literal["qwen", "bonsai"] | None = None
     language: Literal["en", "ne"] = "en"
     kind: DocumentKind
@@ -93,6 +95,7 @@ class ReviewedQuestionCandidate(Contract):
 
 
 class ReviewedQuestionSelectionRequest(Contract):
+    user_context: str = Field(default="", max_length=4000)
     model_profile: Literal["qwen", "bonsai"] | None = None
     message: str = Field(min_length=1, max_length=2000)
     language: Literal["en", "ne"]

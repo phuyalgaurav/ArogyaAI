@@ -916,3 +916,70 @@ def test_general_explanation_is_distinct_from_targeted_question(setup):
     targeted = turn(client, headers, grants, c, message="When is follow-up?", rid="question")
     assert targeted.status_code == 200
     assert provider.requests[-1].question == "When is follow-up?"
+
+
+def test_user_context_requires_permission_and_is_bound_to_one_chat(setup):
+    _, client, headers, grants, provider, _ = setup
+    result = client.post(
+        "/api/v1/conversations",
+        headers=headers,
+        json={"mode": "health", "user_context": "User says they prefer Nepali."},
+    )
+    assert result.status_code == 422
+    included = create(
+        client,
+        headers,
+        mode="health",
+        user_context="User says they prefer Nepali.",
+        include_user_context=True,
+    )
+    assert included["user_context"] == "User says they prefer Nepali."
+    assert (
+        turn(client, headers, grants, included, "What is a fever?").json()["status"] == "answered"
+    )
+    assert provider.requests[-1].user_context == "User says they prefer Nepali."
+    independent = create(client, headers, mode="health")
+    assert independent["user_context"] == ""
+    assert (
+        turn(client, headers, grants, independent, "What is a fever?", "independent").json()[
+            "status"
+        ]
+        == "answered"
+    )
+    assert provider.requests[-1].user_context == ""
+    assert (
+        client.get(f"/api/v1/conversations/{included['id']}", headers=headers).json()[
+            "user_context"
+        ]
+        == included["user_context"]
+    )
+
+
+def test_public_health_followup_uses_context_without_inventing_review(setup):
+    from arogya_api.documents.models import ReviewedQuestionSelectionResult
+
+    _, client, headers, grants, provider, _ = setup
+    requests = []
+
+    async def select(request):
+        requests.append(request)
+        selected = next(
+            q
+            for q in request.candidates
+            if q.question == "What are the general self-care steps for an adult fever?"
+        )
+        return ReviewedQuestionSelectionResult(
+            selection={"question_id": selected.id}, model="fixture", revision="a" * 64
+        )
+
+    provider.select_reviewed_question = select
+    chat = create(client, headers, mode="health")
+    first = turn(client, headers, grants, chat, "What is a fever?").json()
+    assert first["status"] == "answered"
+    followup = turn(
+        client, headers, grants, chat, "How is it generally cared for?", "followup"
+    ).json()
+    assert followup["status"] == "answered"
+    assert followup["health"]["safety"]["rule_ids"] == ["public_source_education"]
+    assert followup["health"]["evidence"][0]["section_id"] == "care"
+    assert requests[-1].previous_questions == ["What is a fever?"]
