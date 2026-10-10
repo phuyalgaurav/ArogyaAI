@@ -227,6 +227,8 @@ def test_durable_history_opt_in_resume_after_new_session_and_restart(setup):
     )
     c = create(client, durable, storage="server_history", allow_context_storage=True)
     c = review(client, durable, grants, add_text(client, durable, grants, c))
+    saved_context = c["attachments"][0]["document_context"]
+    assert saved_context is not None
     assert turn(client, durable, grants, c).status_code == 200
     restarted = create_app(settings, inference=provider)
     with TestClient(restarted) as next_client:
@@ -237,6 +239,7 @@ def test_durable_history_opt_in_resume_after_new_session_and_restart(setup):
         }
         resumed = next_client.get(f"/api/v1/conversations/{c['id']}", headers=new_headers)
         assert resumed.status_code == 200 and len(resumed.json()["turns"]) == 1
+        assert resumed.json()["attachments"][0]["document_context"] == saved_context
         consent = next_client.post(
             "/api/v1/consents",
             headers=new_headers,
@@ -306,13 +309,17 @@ def test_no_result_persisted_after_inflight_revocation_or_deletion(setup, change
         assert client.get(f"/api/v1/conversations/{c['id']}", headers=headers).json()["turns"] == []
 
 
-def test_recognition_job_kind_provenance_idempotency_and_no_raw_image_storage(setup):
+@pytest.mark.parametrize("method", ["vision", "printed_ocr"])
+def test_recognition_job_kind_provenance_idempotency_and_no_raw_image_storage(setup, method):
     app, client, headers, grants, provider, _ = setup
+    if method == "printed_ocr":
+        app.state.conversations.images = type("Reader", (), {"read": provider.read_prescription})()
     c = create(client, headers, mode="medicine")
     data = {
         "request_id": "recognize",
         "expected_context_revision": 0,
         "kind": "medicine",
+        "method": method,
         "image": {
             "image_base64": "U1lOVEhFVElDX1RFTVBP",
             "consent_id": grants["image_transcription"],
@@ -331,10 +338,51 @@ def test_recognition_job_kind_provenance_idempotency_and_no_raw_image_storage(se
     assert provider.requests[0].kind == "medicine"
     c = client.get(f"/api/v1/conversations/{c['id']}", headers=headers).json()
     item = c["attachments"][0]
-    assert item["recognition"]["method"] == "vision"
+    assert item["recognition"]["method"] == method
+    assert ("printed_ocr_not_handwriting_verified" in item["recognition"]["warnings"]) == (
+        method == "printed_ocr"
+    )
     assert "illegible_regions" in item["recognition"]["warnings"]
     assert item["original_available"] is False and item["observed_strengths"] == ["2.5 mg"]
     assert "U1lOVEhFVElDX1RFTVBP" not in str(app.state.contexts.memory)
+
+
+@pytest.mark.parametrize("method", ["vision", "printed_ocr"])
+def test_empty_label_fails_without_creating_attachment(setup, method):
+    app, client, headers, grants, provider, _ = setup
+
+    async def empty(request):
+        return ImageReadResult(
+            text="  \n", language=request.language, engine="fixture", revision="a" * 64
+        )
+
+    provider.read_prescription = empty
+    app.state.conversations.images = type("Reader", (), {"read": staticmethod(empty)})()
+    c = create(client, headers, mode="medicine")
+    path = f"/api/v1/conversations/{c['id']}"
+    data = {
+        "request_id": "empty-label",
+        "expected_context_revision": 0,
+        "kind": "medicine",
+        "method": method,
+        "image": {
+            "image_base64": "U1lOVEhFVElDX1RFTVBP",
+            "consent_id": grants["image_transcription"],
+        },
+    }
+    response = client.post(path + "/recognitions", headers=headers, json=data)
+    assert response.status_code == 202
+    job = response.json()
+    for _ in range(20):
+        job = client.get(path + "/recognitions/" + job["id"], headers=headers).json()
+        if job["status"] != "processing":
+            break
+    assert job["status"] == "failed"
+    assert job["error_code"] == "image_no_readable_text"
+    assert not job["retryable"]
+    snapshot = client.get(path, headers=headers).json()
+    assert snapshot["attachments"] == []
+    assert snapshot["context_revision"] == 0
 
 
 def test_recognition_revocation_withholds_attachment(setup):
@@ -983,3 +1031,97 @@ def test_public_health_followup_uses_context_without_inventing_review(setup):
     assert followup["health"]["safety"]["rule_ids"] == ["public_source_education"]
     assert followup["health"]["evidence"][0]["section_id"] == "care"
     assert requests[-1].previous_questions == ["What is a fever?"]
+
+
+def test_document_rag_context_is_built_once_reused_and_rebuilt_on_correction(setup, monkeypatch):
+    import hashlib
+
+    from arogya_api.conversations import service
+    from arogya_api.documents import service as documents
+
+    app, client, headers, grants, provider, _ = setup
+    text = "\n".join(
+        [f"Section {i}: " + "Background passage. " * 6 for i in range(1, 36)]
+        + ["Creatinine: 1.25 mg/dL", "Follow-up Friday"]
+    )
+    calls = []
+    original = service.build_context
+
+    def build(*args):
+        calls.append(args)
+        return original(*args)
+
+    monkeypatch.setattr(service, "build_context", build)
+
+    def unexpected(*args):
+        raise AssertionError("An indexed attachment must not be reindexed per question")
+
+    monkeypatch.setattr(documents, "build_context", unexpected)
+
+    async def select(request):
+        provider.requests.append(request)
+        return DocumentSelectionResult(
+            selection={"highlights": [], "answer_line_ids": ["L36"]},
+            model="fixture",
+            revision="a" * 64,
+        )
+
+    provider.select_document = select
+    c = add_text(client, headers, grants, create(client, headers), text=text)
+    assert c["attachments"][0]["document_context"] is None
+    c = review(client, headers, grants, c)
+    context = c["attachments"][0]["document_context"]
+    assert context["document_sha256"] == hashlib.sha256(text.encode()).hexdigest()
+    assert context["reviewed_revision"] == 1 and context["summary"]
+    assert len(calls) == 1 and not provider.requests
+    for index, message in enumerate(["Explain creatinine", "Explain that line"]):
+        response = turn(client, headers, grants, c, message, f"rag-{index}")
+        assert response.status_code == 200, response.text
+        result = response.json()
+        assert result["references"][0]["line_id"] == "L36"
+        assert result["references"][0]["quote"] == "Creatinine: 1.25 mg/dL"
+        assert result["document"]["retrieval"]["context_reused"]
+        assert len(provider.requests[-1].lines) < 37
+    assert len(calls) == 1
+    # Review reloads the current conversation, preserving both completed turns.
+    c = review(client, headers, grants, c, text=text.replace("1.25", "1.75"))
+    changed = c["attachments"][0]["document_context"]
+    assert len(calls) == 2 and changed["reviewed_revision"] == 2
+    assert changed["document_sha256"] != context["document_sha256"]
+    result = turn(client, headers, grants, c, "Explain creatinine", "corrected").json()
+    assert result["references"][0]["quote"] == "Creatinine: 1.75 mg/dL"
+    assert provider.requests[-1].previous_turns == []
+    with app.state.history.connect() as db:
+        assert "Background passage" not in "\n".join(db.iterdump())
+
+
+def test_restore_rebuilds_untrusted_document_context_and_legacy_context_is_backfilled(setup):
+    app, client, headers, grants, provider, _ = setup
+    c = review(client, headers, grants, add_text(client, headers, grants, create(client, headers)))
+    original = c["attachments"][0]["document_context"]
+    c["id"] = "f" * 32
+    c["attachments"][0]["document_context"]["summary"] = "Injected document evidence"
+    c["attachments"][0]["document_context"]["chunks"][0]["terms"] = {"injected": 100}
+    consent = client.post(
+        "/api/v1/consents",
+        headers=headers,
+        json={"purpose": "conversation_restore", "data_categories": ["conversation_context"]},
+    ).json()["id"]
+    restored = client.post(
+        "/api/v1/conversations/restore",
+        headers=headers,
+        json={"snapshot": c, "consent_id": consent},
+    )
+    assert restored.status_code == 201, restored.text
+    c = restored.json()
+    rebuilt = c["attachments"][0]["document_context"]
+    assert "Injected" not in rebuilt["summary"]
+    assert "injected" not in rebuilt["chunks"][0]["terms"]
+    assert rebuilt["document_sha256"] == original["document_sha256"]
+    owner = next(key[0] for key in app.state.contexts.memory if key[1] == c["id"])
+    legacy = app.state.contexts.load(owner, c["id"])
+    legacy.attachments[0].document_context = None
+    app.state.contexts.save(owner, legacy)
+    assert turn(client, headers, grants, c).status_code == 200
+    assert app.state.contexts.load(owner, c["id"]).attachments[0].document_context is not None
+    assert provider.requests[-1].lines[1].text == "Follow-up Friday"

@@ -8,6 +8,36 @@ export type OriginalAvailable = false;
 export type OriginalText = string;
 export type ReviewedText = string | null;
 export type ReviewedRevision = number;
+export type SchemaVersion = 1;
+export type Method = "bm25";
+export type DocumentSha256 = string;
+export type ReviewedRevision1 = number;
+export type Kind1 = "prescription" | "doctor_note" | "report";
+/**
+ * @minItems 1
+ * @maxItems 40
+ */
+export type Chunks = [DocumentChunk, ...DocumentChunk[]];
+export type Id1 = string;
+/**
+ * @minItems 1
+ * @maxItems 3
+ */
+export type LineIds = [string] | [string, string] | [string, string, string];
+export type TokenCount = number;
+export type AverageChunkLength = number;
+export type Summary = string;
+/**
+ * @maxItems 6
+ */
+export type SummaryLineIds =
+  | []
+  | [string]
+  | [string, string]
+  | [string, string, string]
+  | [string, string, string, string]
+  | [string, string, string, string, string]
+  | [string, string, string, string, string, string];
 /**
  * @maxItems 20
  */
@@ -259,7 +289,7 @@ export type Language = "eng" | "nep" | "eng+nep";
 export type Status = "unverified";
 export type Engine = string;
 export type Revision1 = string;
-export type Method = ("vision" | "printed_ocr") | null;
+export type Method1 = ("vision" | "printed_ocr") | null;
 /**
  * @maxItems 8
  */
@@ -493,7 +523,7 @@ export type MedicineCandidates =
       MedicineRecord,
       MedicineRecord
     ];
-export type Id1 = string;
+export type Id2 = string;
 export type CanonicalName = string;
 /**
  * @minItems 1
@@ -798,11 +828,39 @@ export interface ConversationAttachment {
   original_text: OriginalText;
   reviewed_text?: ReviewedText;
   reviewed_revision?: ReviewedRevision;
+  document_context?: DocumentContext | null;
   review_history?: ReviewHistory;
   recognition?: ImageReadResult | null;
   medicine_candidates?: MedicineCandidates;
   observed_strengths?: ObservedStrengths;
   selected_medicine?: MedicineRecord | null;
+}
+/**
+ * Derived retrieval data, retained under the attachment's existing storage policy.
+ */
+export interface DocumentContext {
+  schema_version?: SchemaVersion;
+  method?: Method;
+  document_sha256: DocumentSha256;
+  reviewed_revision: ReviewedRevision1;
+  kind: Kind1;
+  chunks: Chunks;
+  document_frequency: DocumentFrequency;
+  average_chunk_length: AverageChunkLength;
+  summary: Summary;
+  summary_line_ids: SummaryLineIds;
+}
+export interface DocumentChunk {
+  id: Id1;
+  line_ids: LineIds;
+  terms: Terms;
+  token_count: TokenCount;
+}
+export interface Terms {
+  [k: string]: number;
+}
+export interface DocumentFrequency {
+  [k: string]: number;
 }
 export interface ReviewedContextRevision {
   revision: Revision;
@@ -817,11 +875,11 @@ export interface ImageReadResult {
   status?: Status;
   engine: Engine;
   revision: Revision1;
-  method?: Method;
+  method?: Method1;
   warnings?: Warnings;
 }
 export interface MedicineRecord {
-  id: Id1;
+  id: Id2;
   canonical_name: CanonicalName;
   active_ingredients: ActiveIngredients;
   aliases: Aliases;

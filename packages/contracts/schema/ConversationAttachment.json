@@ -1,5 +1,130 @@
 {
   "$defs": {
+    "DocumentChunk": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^C[1-9][0-9]?$",
+          "title": "Id",
+          "type": "string"
+        },
+        "line_ids": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 3,
+          "minItems": 1,
+          "title": "Line Ids",
+          "type": "array"
+        },
+        "terms": {
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "maxProperties": 1000,
+          "title": "Terms",
+          "type": "object"
+        },
+        "token_count": {
+          "maximum": 1000,
+          "minimum": 0,
+          "title": "Token Count",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "id",
+        "line_ids",
+        "terms",
+        "token_count"
+      ],
+      "title": "DocumentChunk",
+      "type": "object"
+    },
+    "DocumentContext": {
+      "additionalProperties": false,
+      "description": "Derived retrieval data, retained under the attachment's existing storage policy.",
+      "properties": {
+        "schema_version": {
+          "const": 1,
+          "default": 1,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "method": {
+          "const": "bm25",
+          "default": "bm25",
+          "title": "Method",
+          "type": "string"
+        },
+        "document_sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Document Sha256",
+          "type": "string"
+        },
+        "reviewed_revision": {
+          "minimum": 0,
+          "title": "Reviewed Revision",
+          "type": "integer"
+        },
+        "kind": {
+          "enum": [
+            "prescription",
+            "doctor_note",
+            "report"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "chunks": {
+          "items": {
+            "$ref": "#/$defs/DocumentChunk"
+          },
+          "maxItems": 40,
+          "minItems": 1,
+          "title": "Chunks",
+          "type": "array"
+        },
+        "document_frequency": {
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "maxProperties": 8000,
+          "title": "Document Frequency",
+          "type": "object"
+        },
+        "average_chunk_length": {
+          "minimum": 0,
+          "title": "Average Chunk Length",
+          "type": "number"
+        },
+        "summary": {
+          "maxLength": 1800,
+          "title": "Summary",
+          "type": "string"
+        },
+        "summary_line_ids": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 6,
+          "title": "Summary Line Ids",
+          "type": "array"
+        }
+      },
+      "required": [
+        "document_sha256",
+        "reviewed_revision",
+        "kind",
+        "chunks",
+        "document_frequency",
+        "average_chunk_length",
+        "summary",
+        "summary_line_ids"
+      ],
+      "title": "DocumentContext",
+      "type": "object"
+    },
     "ImageReadResult": {
       "additionalProperties": false,
       "properties": {
@@ -236,6 +361,17 @@
       "minimum": 0,
       "title": "Reviewed Revision",
       "type": "integer"
+    },
+    "document_context": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/DocumentContext"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
     },
     "review_history": {
       "items": {

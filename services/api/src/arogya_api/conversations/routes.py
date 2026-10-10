@@ -135,6 +135,10 @@ def conversation_router(contexts, service, metadata, sessions, history, limits, 
                 fail("attachment_mode_mismatch", 422)
             if attachment.reviewed_text is not None:
                 reviewed_text(attachment.reviewed_text, attachment.kind)
+            # Browser snapshots are untrusted. Never accept a supplied retrieval index.
+            attachment.document_context = None
+            if attachment.reviewed_text is not None and attachment.kind != "medicine":
+                service.document_context(attachment)
             supplied = attachment.selected_medicine
             attachment.medicine_candidates = service.candidates(attachment.reviewed_text or "")
             attachment.selected_medicine = next(

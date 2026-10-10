@@ -42,6 +42,36 @@ class DocumentLine(Contract):
     text: str = Field(min_length=1, max_length=500)
 
 
+class DocumentChunk(Contract):
+    id: str = Field(pattern=r"^C[1-9][0-9]?$")
+    line_ids: list[str] = Field(min_length=1, max_length=3)
+    terms: dict[str, int] = Field(max_length=1000)
+    token_count: int = Field(ge=0, le=1000)
+
+
+class DocumentContext(Contract):
+    """Derived retrieval data, retained under the attachment's existing storage policy."""
+
+    schema_version: Literal[1] = 1
+    method: Literal["bm25"] = "bm25"
+    document_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
+    reviewed_revision: int = Field(ge=0)
+    kind: DocumentKind
+    chunks: list[DocumentChunk] = Field(min_length=1, max_length=40)
+    document_frequency: dict[str, int] = Field(max_length=8000)
+    average_chunk_length: float = Field(ge=0)
+    summary: str = Field(max_length=1800)
+    summary_line_ids: list[str] = Field(max_length=6)
+
+
+class DocumentRetrieval(Contract):
+    method: Literal["bm25", "full_document"]
+    line_ids: list[str] = Field(max_length=40)
+    total_lines: int = Field(ge=1, le=40)
+    context_reused: bool
+    truncated: bool
+
+
 class DocumentSelectionRequest(Contract):
     user_context: str = Field(default="", max_length=4000)
     model_profile: Literal["qwen", "bonsai"] | None = None
@@ -139,3 +169,4 @@ class DocumentExplainResult(Contract):
     revision: str | None = None
     speech_text_ne: str = Field(max_length=300)
     question_method: Literal["none", "literal_document_match", "model_selection"] = "none"
+    retrieval: DocumentRetrieval | None = None

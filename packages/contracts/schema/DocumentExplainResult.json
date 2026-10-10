@@ -78,6 +78,50 @@
       ],
       "title": "DocumentItem",
       "type": "object"
+    },
+    "DocumentRetrieval": {
+      "additionalProperties": false,
+      "properties": {
+        "method": {
+          "enum": [
+            "bm25",
+            "full_document"
+          ],
+          "title": "Method",
+          "type": "string"
+        },
+        "line_ids": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 40,
+          "title": "Line Ids",
+          "type": "array"
+        },
+        "total_lines": {
+          "maximum": 40,
+          "minimum": 1,
+          "title": "Total Lines",
+          "type": "integer"
+        },
+        "context_reused": {
+          "title": "Context Reused",
+          "type": "boolean"
+        },
+        "truncated": {
+          "title": "Truncated",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "method",
+        "line_ids",
+        "total_lines",
+        "context_reused",
+        "truncated"
+      ],
+      "title": "DocumentRetrieval",
+      "type": "object"
     }
   },
   "additionalProperties": false,
@@ -153,6 +197,17 @@
       ],
       "title": "Question Method",
       "type": "string"
+    },
+    "retrieval": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/DocumentRetrieval"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
     }
   },
   "required": [

@@ -65,6 +65,36 @@ export type OriginalAvailable = false;
 export type OriginalText = string;
 export type ReviewedText = string | null;
 export type ReviewedRevision = number;
+export type SchemaVersion1 = 1;
+export type Method = "bm25";
+export type DocumentSha256 = string;
+export type ReviewedRevision1 = number;
+export type Kind1 = "prescription" | "doctor_note" | "report";
+/**
+ * @minItems 1
+ * @maxItems 40
+ */
+export type Chunks = [DocumentChunk, ...DocumentChunk[]];
+export type Id2 = string;
+/**
+ * @minItems 1
+ * @maxItems 3
+ */
+export type LineIds = [string] | [string, string] | [string, string, string];
+export type TokenCount = number;
+export type AverageChunkLength = number;
+export type Summary = string;
+/**
+ * @maxItems 6
+ */
+export type SummaryLineIds =
+  | []
+  | [string]
+  | [string, string]
+  | [string, string, string]
+  | [string, string, string, string]
+  | [string, string, string, string, string]
+  | [string, string, string, string, string, string];
 /**
  * @maxItems 20
  */
@@ -316,7 +346,7 @@ export type Language1 = "eng" | "nep" | "eng+nep";
 export type Status = "unverified";
 export type Engine = string;
 export type Revision1 = string;
-export type Method = ("vision" | "printed_ocr") | null;
+export type Method1 = ("vision" | "printed_ocr") | null;
 /**
  * @maxItems 8
  */
@@ -550,7 +580,7 @@ export type MedicineCandidates =
       MedicineRecord,
       MedicineRecord
     ];
-export type Id2 = string;
+export type Id3 = string;
 export type CanonicalName = string;
 /**
  * @minItems 1
@@ -844,7 +874,7 @@ export type ObservedStrengths =
       string,
       string
     ];
-export type Id3 = string;
+export type Id4 = string;
 export type Message = string;
 export type Answer = string;
 export type Language2 = "en" | "ne";
@@ -863,7 +893,7 @@ export type Status2 = "draft" | "no_match" | "professional_review" | "urgent";
 export type Notice = string;
 export type LineId1 = string;
 export type Quote1 = string;
-export type Kind1 = "medicine" | "instruction" | "finding" | "follow_up" | "other";
+export type Kind2 = "medicine" | "instruction" | "finding" | "follow_up" | "other";
 export type Meaning = string;
 export type Term = string;
 export type Meaning1 = string;
@@ -873,12 +903,20 @@ export type CheckWithProfessional = boolean;
 export type SpeechTextNe = string;
 export type Items = DocumentItem[];
 export type AnswerLineIds = string[];
-export type DocumentSha256 = string;
+export type DocumentSha2561 = string;
 export type Model = string | null;
 export type Revision2 = string | null;
 export type SpeechTextNe1 = string;
 export type QuestionMethod = "none" | "literal_document_match" | "model_selection";
-export type SchemaVersion1 = "1.0";
+export type Method2 = "bm25" | "full_document";
+/**
+ * @maxItems 40
+ */
+export type LineIds1 = string[];
+export type TotalLines = number;
+export type ContextReused = boolean;
+export type Truncated = boolean;
+export type SchemaVersion2 = "1.0";
 export type RequestId1 = string;
 export type Status3 = "answered" | "needs_clarification" | "needs_professional_review" | "urgent" | "unavailable";
 export type Language3 = "en" | "ne" | "tam";
@@ -940,11 +978,39 @@ export interface ConversationAttachment {
   original_text: OriginalText;
   reviewed_text?: ReviewedText;
   reviewed_revision?: ReviewedRevision;
+  document_context?: DocumentContext | null;
   review_history?: ReviewHistory;
   recognition?: ImageReadResult | null;
   medicine_candidates?: MedicineCandidates;
   observed_strengths?: ObservedStrengths;
   selected_medicine?: MedicineRecord | null;
+}
+/**
+ * Derived retrieval data, retained under the attachment's existing storage policy.
+ */
+export interface DocumentContext {
+  schema_version?: SchemaVersion1;
+  method?: Method;
+  document_sha256: DocumentSha256;
+  reviewed_revision: ReviewedRevision1;
+  kind: Kind1;
+  chunks: Chunks;
+  document_frequency: DocumentFrequency;
+  average_chunk_length: AverageChunkLength;
+  summary: Summary;
+  summary_line_ids: SummaryLineIds;
+}
+export interface DocumentChunk {
+  id: Id2;
+  line_ids: LineIds;
+  terms: Terms;
+  token_count: TokenCount;
+}
+export interface Terms {
+  [k: string]: number;
+}
+export interface DocumentFrequency {
+  [k: string]: number;
 }
 export interface ReviewedContextRevision {
   revision: Revision;
@@ -959,11 +1025,11 @@ export interface ImageReadResult {
   status?: Status;
   engine: Engine;
   revision: Revision1;
-  method?: Method;
+  method?: Method1;
   warnings?: Warnings;
 }
 export interface MedicineRecord {
-  id: Id2;
+  id: Id3;
   canonical_name: CanonicalName;
   active_ingredients: ActiveIngredients;
   aliases: Aliases;
@@ -971,7 +1037,7 @@ export interface MedicineRecord {
   source_ids: SourceIds;
 }
 export interface ConversationTurn {
-  id: Id3;
+  id: Id4;
   message: Message;
   answer: Answer;
   language: Language2;
@@ -996,16 +1062,17 @@ export interface DocumentExplainResult {
   notice: Notice;
   items: Items;
   answer_line_ids: AnswerLineIds;
-  document_sha256: DocumentSha256;
+  document_sha256: DocumentSha2561;
   model?: Model;
   revision?: Revision2;
   speech_text_ne: SpeechTextNe1;
   question_method?: QuestionMethod;
+  retrieval?: DocumentRetrieval | null;
 }
 export interface DocumentItem {
   line_id: LineId1;
   quote: Quote1;
-  kind: Kind1;
+  kind: Kind2;
   meaning: Meaning;
   definitions: Definitions;
   check_with_professional: CheckWithProfessional;
@@ -1016,8 +1083,15 @@ export interface DocumentDefinition {
   meaning: Meaning1;
   source_url: SourceUrl;
 }
+export interface DocumentRetrieval {
+  method: Method2;
+  line_ids: LineIds1;
+  total_lines: TotalLines;
+  context_reused: ContextReused;
+  truncated: Truncated;
+}
 export interface ArogyaResponse {
-  schema_version?: SchemaVersion1;
+  schema_version?: SchemaVersion2;
   request_id: RequestId1;
   status: Status3;
   language: Language3;

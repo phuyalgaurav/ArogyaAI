@@ -5,7 +5,7 @@ from typing import Annotated, Literal
 from pydantic import AwareDatetime, Field, model_validator
 
 from arogya_api.core.contracts import ArogyaResponse, Contract
-from arogya_api.documents.models import DocumentExplainResult, DocumentKind
+from arogya_api.documents.models import DocumentContext, DocumentExplainResult, DocumentKind
 from arogya_api.images.models import ImageReadRequest, ImageReadResult
 from arogya_api.knowledge.models import MedicineRecord
 from arogya_api.speech.models import SpeechResult, TranscriptionRequest, TranscriptionResult
@@ -60,6 +60,7 @@ class ConversationAttachment(Contract):
     original_text: str = Field(max_length=30000)
     reviewed_text: str | None = Field(default=None, max_length=8000)
     reviewed_revision: int = Field(default=0, ge=0)
+    document_context: DocumentContext | None = None
     review_history: list[ReviewedContextRevision] = Field(default_factory=list, max_length=20)
     recognition: ImageReadResult | None = None
     medicine_candidates: list[MedicineRecord] = Field(default_factory=list, max_length=20)

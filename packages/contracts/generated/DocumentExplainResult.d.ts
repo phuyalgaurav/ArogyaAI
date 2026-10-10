@@ -18,6 +18,14 @@ export type Model = string | null;
 export type Revision = string | null;
 export type SpeechTextNe1 = string;
 export type QuestionMethod = "none" | "literal_document_match" | "model_selection";
+export type Method = "bm25" | "full_document";
+/**
+ * @maxItems 40
+ */
+export type LineIds = string[];
+export type TotalLines = number;
+export type ContextReused = boolean;
+export type Truncated = boolean;
 
 export interface DocumentExplainResult {
   status: Status;
@@ -29,6 +37,7 @@ export interface DocumentExplainResult {
   revision?: Revision;
   speech_text_ne: SpeechTextNe1;
   question_method?: QuestionMethod;
+  retrieval?: DocumentRetrieval | null;
 }
 export interface DocumentItem {
   line_id: LineId;
@@ -43,4 +52,11 @@ export interface DocumentDefinition {
   term: Term;
   meaning: Meaning1;
   source_url: SourceUrl;
+}
+export interface DocumentRetrieval {
+  method: Method;
+  line_ids: LineIds;
+  total_lines: TotalLines;
+  context_reused: ContextReused;
+  truncated: Truncated;
 }

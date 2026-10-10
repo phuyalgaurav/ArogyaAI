@@ -11,8 +11,15 @@ from arogya_api.documents.models import (
     DocumentExplainRequest,
     DocumentExplainResult,
     DocumentItem,
-    DocumentLine,
+    DocumentRetrieval,
     DocumentSelectionRequest,
+)
+from arogya_api.documents.rag import (
+    batches,
+    build_context,
+    context_matches,
+    document_lines,
+    retrieve,
 )
 from arogya_api.documents.rules import ADMIN, line_kind, literal_question_matches
 from arogya_api.inference.errors import ProviderUnavailable
@@ -26,7 +33,7 @@ DECISION = re.compile(
 )
 
 
-async def explain(payload, provider):
+async def explain(payload, provider, context=None):
     revision = hashlib.sha256(payload.text.encode()).hexdigest()
     ne = payload.language == "ne"
     base = {
@@ -73,40 +80,86 @@ async def explain(payload, provider):
                 "यो निर्णय चिकित्सक वा फार्मासिस्टसँग गर्नुहोस्। व्यक्तिगत औषधिको मात्रा यस सेवाले छान्दैन।"
             ),
         )
-    lines = [
-        DocumentLine(id=f"L{i + 1}", text=line)
-        for i, line in enumerate(line.strip() for line in payload.text.splitlines() if line.strip())
-    ]
-    if not set(payload.focus_line_ids) <= {line.id for line in lines}:
+    all_lines = document_lines(payload.text)
+    known = {line.id: line.text for line in all_lines}
+    if not set(payload.focus_line_ids) <= set(known):
         raise HTTPException(422, "unknown_document_line")
-    request = DocumentSelectionRequest(
-        user_context=payload.user_context,
-        kind=payload.kind,
-        question=payload.question,
-        lines=lines,
-        language=payload.language,
-        model_profile=payload.model_profile,
-        previous_turns=payload.previous_turns,
-        focus_line_ids=payload.focus_line_ids,
+    literal = literal_question_matches(payload.question, all_lines)
+    focus = payload.focus_line_ids
+    if not focus and re.search(r"\b(?:that|this) line\b|त्यो हरफ|त्यो लाइन", payload.question, re.I):
+        if payload.previous_turns and len(payload.previous_turns[-1].answer_line_ids) == 1:
+            focus = payload.previous_turns[-1].answer_line_ids
+            if not set(focus) <= set(known):
+                raise HTTPException(422, "stale_document_references")
+    reused = context_matches(
+        context, payload.text, payload.kind, context.reviewed_revision if context else 0
     )
+    if not reused:
+        context = build_context(payload.text, payload.kind)
+    lines = retrieve(
+        context, all_lines, payload.question, payload.previous_turns, focus or literal or []
+    )
+    retrieval = DocumentRetrieval(
+        method="bm25" if payload.question.strip() else "full_document",
+        line_ids=[line.id for line in lines],
+        total_lines=len(all_lines),
+        context_reused=reused,
+        truncated=len(lines) < len(all_lines),
+    )
+    if not lines:
+        return DocumentExplainResult(
+            **base,
+            status="no_match",
+            notice="मिल्दो अंश भेटिएन। हरफ छान्नुहोस् वा प्रश्न फेरि लेख्नुहोस्।"
+            if ne
+            else "No matching passage was retrieved. Select a line or rephrase the question.",
+            speech_text_ne="मिल्दो अंश भेटिएन। हरफ छान्नुहोस् वा प्रश्न फेरि लेख्नुहोस्।",
+            retrieval=retrieval,
+        )
+    meanings, highlighted, model_answers = {}, set(), []
+    identity = None
     try:
-        result = await provider.select_document(request)
-        result.selection.validate_ids(lines)
+        for batch in batches(lines):
+            batch_ids = {line.id for line in batch}
+            previous = [
+                turn.model_copy(
+                    update={
+                        "answer_line_ids": [i for i in turn.answer_line_ids if i in batch_ids],
+                        "answer_excerpt": turn.answer_excerpt[:300],
+                        "answer_excerpt_truncated": turn.answer_excerpt_truncated
+                        or len(turn.answer_excerpt) > 300,
+                    }
+                )
+                for turn in payload.previous_turns[-3:]
+                if batch_ids.intersection(turn.answer_line_ids)
+            ]
+            request = DocumentSelectionRequest(
+                user_context=payload.user_context,
+                kind=payload.kind,
+                question=payload.question,
+                lines=batch,
+                language=payload.language,
+                model_profile=payload.model_profile,
+                previous_turns=previous,
+                focus_line_ids=[i for i in focus if i in batch_ids],
+            )
+            result = await provider.select_document(request)
+            result.selection.validate_ids(batch)
+            if identity is not None and identity != (result.model, result.revision):
+                raise ValueError("Document model changed between passages")
+            identity = result.model, result.revision
+            meanings.update(
+                (item.line_id, item.meaning) for item in result.selection.highlights if item.meaning
+            )
+            highlighted.update(item.line_id for item in result.selection.highlights)
+            model_answers.extend(result.selection.answer_line_ids)
     except (ProviderUnavailable, ValueError):
         raise HTTPException(503, "document_reader_unavailable_or_invalid") from None
-    known = {line.id: line.text for line in lines}
-    meanings = {item.line_id: item.meaning for item in result.selection.highlights if item.meaning}
-    selected_ids = {item.line_id for item in result.selection.highlights}
+    selected_ids = highlighted
     selected_ids.update(line.id for line in lines if not ADMIN.search(line.text))
-    literal = literal_question_matches(payload.question, lines)
-    answer_ids = literal if literal is not None else result.selection.answer_line_ids
-    if payload.focus_line_ids:
-        answer_ids = payload.focus_line_ids
-    elif re.search(r"\b(?:that|this) line\b|त्यो हरफ|त्यो लाइन", payload.question, re.I):
-        if payload.previous_turns and len(payload.previous_turns[-1].answer_line_ids) == 1:
-            answer_ids = payload.previous_turns[-1].answer_line_ids
-            if not set(answer_ids) <= set(known):
-                raise HTTPException(422, "stale_document_references")
+    answer_ids = literal if literal is not None else list(dict.fromkeys(model_answers))[:3]
+    if focus:
+        answer_ids = focus
     if not payload.question.strip():
         answer_ids = []
     selected_ids.update(answer_ids)
@@ -161,6 +214,7 @@ async def explain(payload, provider):
         model=result.model,
         revision=result.revision,
         speech_text_ne=speech,
+        retrieval=retrieval,
         question_method=("literal_document_match" if literal is not None else "model_selection")
         if payload.question.strip()
         else "none",

@@ -38,6 +38,8 @@ export type { ImageReadRequest } from "./ImageReadRequest";
 export type { ImageReadResult } from "./ImageReadResult";
 export type { DocumentExplainRequest } from "./DocumentExplainRequest";
 export type { DocumentExplainResult } from "./DocumentExplainResult";
+export type { DocumentContext } from "./DocumentContext";
+export type { DocumentRetrieval } from "./DocumentRetrieval";
 export type { HistoryMessage } from "./HistoryMessage";
 export type { HistoryConversation } from "./HistoryConversation";
 export type { HistoryConsent } from "./HistoryConsent";

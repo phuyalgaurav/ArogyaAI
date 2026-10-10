@@ -2,6 +2,8 @@
 
 import re
 
+from arogya_api.documents.glossary import TERMS
+
 FOLLOW_UP = re.compile(r"follow[ -]?up|review appointment|return visit|फेरि भेट|पुनः.*भेट", re.I)
 FINDING = re.compile(
     r"\b(?:Hb|Hgb|CBC|hemoglobin|glucose|creatinine|result|reference range|g/dL|mg/dL)\b|"
@@ -36,6 +38,14 @@ def literal_question_matches(question, lines):
     """Only navigation requests with an explicit topic; return None for semantic questions."""
     if not re.search(r"\b(?:which|what|where|when)\b|कुन|कहाँ|कहिले", question, re.I):
         return None
+    if re.search(r"\bline\b|\bwhere\b|हरफ|लाइन|कहाँ", question, re.I):
+        patterns = [pattern for pattern, *_ in TERMS if re.search(pattern, question, re.I)]
+        if patterns:
+            return [
+                line.id
+                for line in lines
+                if any(re.search(pattern, line.text, re.I) for pattern in patterns)
+            ][:3]
     pattern = None
     if FOLLOW_UP.search(question):
         pattern = FOLLOW_UP

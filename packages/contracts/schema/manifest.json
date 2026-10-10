@@ -38,6 +38,8 @@
   "ImageReadResult",
   "DocumentExplainRequest",
   "DocumentExplainResult",
+  "DocumentContext",
+  "DocumentRetrieval",
   "HistoryMessage",
   "HistoryConversation",
   "HistoryConsent",

@@ -29,8 +29,10 @@ from arogya_api.conversations.models import (
 from arogya_api.core.contracts import ArogyaResponse, Capabilities
 from arogya_api.core.models import ConsentGrant, ConsentRequest, SessionResponse
 from arogya_api.documents.models import (
+    DocumentContext,
     DocumentExplainRequest,
     DocumentExplainResult,
+    DocumentRetrieval,
 )
 from arogya_api.health.models import ChatRequest
 from arogya_api.history.models import (
@@ -124,6 +126,8 @@ models = (
     ImageReadResult,
     DocumentExplainRequest,
     DocumentExplainResult,
+    DocumentContext,
+    DocumentRetrieval,
     HistoryMessage,
     HistoryConversation,
     HistoryConsent,

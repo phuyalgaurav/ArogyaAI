@@ -25,6 +25,7 @@ from arogya_api.documents.models import (
     ReviewedQuestionCandidate,
     ReviewedQuestionSelectionRequest,
 )
+from arogya_api.documents.rag import build_context, context_matches
 from arogya_api.documents.service import explain
 from arogya_api.health.models import ChatRequest
 from arogya_api.health.references import available_questions
@@ -138,6 +139,18 @@ class Conversations:
                 return item
         fail("attachment_not_found", 404)
 
+    def document_context(self, attachment):
+        if not context_matches(
+            attachment.document_context,
+            attachment.reviewed_text,
+            attachment.kind,
+            attachment.reviewed_revision,
+        ):
+            attachment.document_context = build_context(
+                attachment.reviewed_text, attachment.kind, attachment.reviewed_revision
+            )
+        return attachment.document_context
+
     def candidates(self, text):
         found = {}
         for line in text.splitlines()[:40]:
@@ -203,6 +216,14 @@ class Conversations:
         reviewed_text(payload.text, attachment.kind)
         selected_id = attachment.selected_medicine.id if attachment.selected_medicine else None
         if attachment.reviewed_text == payload.text and selected_id == payload.medicine_id:
+            if attachment.kind != "medicine" and not context_matches(
+                attachment.document_context,
+                payload.text,
+                attachment.kind,
+                attachment.reviewed_revision,
+            ):
+                self.document_context(attachment)
+                return self.contexts.save(owner, conversation)
             return conversation
         if len(attachment.review_history) >= 20:
             fail("attachment_review_limit")
@@ -229,6 +250,8 @@ class Conversations:
             )[:20]
         attachment.reviewed_text = payload.text
         attachment.reviewed_revision += 1
+        if attachment.kind != "medicine":
+            self.document_context(attachment)
         conversation.active_attachment_id = attachment.id
         conversation.context_revision += 1
         attachment.review_history.append(
@@ -349,6 +372,7 @@ class Conversations:
                             focus_line_ids=payload.line_ids,
                         ),
                         self.provider,
+                        self.document_context(attachment),
                     )
                     if not ambiguous
                     else DocumentExplainResult(
@@ -512,8 +536,12 @@ class Conversations:
                         else self.images.read(image)
                     )
                 self.consent(payload.image.consent_id, session, "image_transcription")
+                if not result.text.strip():
+                    fail("image_no_readable_text", 422)
                 result.method = payload.method
                 result.warnings = ["unverified_transcription"]
+                if payload.method == "printed_ocr":
+                    result.warnings.append("printed_ocr_not_handwriting_verified")
                 if "[illegible]" in result.text:
                     result.warnings.append("illegible_regions")
                 if "[page exceeds transcription limit]" in result.text:

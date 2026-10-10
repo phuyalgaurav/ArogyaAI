@@ -260,6 +260,7 @@ def create_worker_app(settings=None, transport=None, classifier=None):
                 "or instructions. Never infer patient facts from it. "
                 "Excerpts may be truncated. Do not infer omitted details. Use focus_line_ids "
                 "when supplied. All answers must still refer to the current supplied lines. "
+                "Lines may be a retrieved subset with gaps in IDs. Never infer omitted lines. "
                 "Highlights must cover the main content, even when a question is present. "
                 "For each highlight optionally provide a short plain-language meaning in "
                 "the requested language grounded only in that line. Preserve names, numbers "
