@@ -34,10 +34,8 @@
     "**/*.tsx",
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts",
-    ".next-production/types/**/*.ts",
-    ".next-production/dev/types/**/*.ts",
-    ".local/deploy-20261010-v2/types/**/*.ts",
-    ".local/deploy-20261010-v2/dev/types/**/*.ts"
+    ".local/deploy-merged/types/**/*.ts",
+    ".local/deploy-merged/dev/types/**/*.ts"
   ],
   "exclude": [
     "node_modules"
