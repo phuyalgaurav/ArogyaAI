@@ -1,10 +1,3 @@
-:root {
-  --paper: #f8f7f3;
-  --ink: #223b34;
-  --muted: #606b64;
-  --line: #e0e3dc;
-  --green: #255647;
-}
 .workspace-main {
   min-height: 70vh;
 }
@@ -231,21 +224,6 @@
   font-size: 12px;
   color: var(--muted);
   margin: 0;
-}
-.workspace-heading {
-  padding: 34px 0 24px;
-  max-width: 790px;
-}
-.workspace-heading h1 {
-  font-size: clamp(31px, 3.8vw, 44px);
-  margin: 9px 0 14px;
-  letter-spacing: -1px;
-}
-.workspace-heading p {
-  font-size: 15px;
-  color: var(--muted);
-  margin: 0;
-  max-width: 650px;
 }
 .image-grid {
   display: grid;
@@ -539,9 +517,7 @@
   clip-path: inset(50%);
   border: 0;
 }
-.workspace-main .chat-section,
 .workspace-main .knowledge-view,
-.workspace-main .medicine-view,
 .workspace-main .privacy-view {
   margin-top: 28px;
   box-shadow: none;
@@ -817,9 +793,7 @@
   .workspace-shell .app-footer p {
     margin-top: 7px;
   }
-  .workspace-main .chat-section,
   .workspace-main .knowledge-view,
-  .workspace-main .medicine-view,
   .workspace-main .privacy-view {
     padding: 18px;
   }
@@ -1369,26 +1343,6 @@
 }
 
 /* Dashboard Styles */
-.dashboard-container {
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 24px 0 48px;
-}
-.dashboard-header {
-  margin-bottom: 32px;
-}
-.dashboard-header h1 {
-  font-family: Georgia, serif;
-  font-size: clamp(32px, 3.8vw, 48px);
-  margin: 8px 0 12px;
-  color: var(--ink);
-}
-.dashboard-intro {
-  font-size: 16px;
-  color: var(--muted);
-  max-width: 650px;
-  line-height: 1.6;
-}
 .dashboard-actions-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -1518,10 +1472,6 @@
 }
 
 /* Transcription Grid */
-.transcription-workspace {
-  max-width: 1200px;
-  margin: 0 auto;
-}
 .transcription-mode-tabs {
   display: flex;
   flex-wrap: wrap;
