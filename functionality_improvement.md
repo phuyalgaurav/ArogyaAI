@@ -1,5 +1,7 @@
 # Functionality improvement review
 
+**Current update:** See the final section, “10 October update: health education and explicitly included user context,” for the implemented fixes and current validation. The original findings below retain their inspection-time evidence.
+
 **Reviewed:** 10 October 2026, Asia/Kathmandu  
 **Scope:** Current working-tree frontend, Python API, shared contracts, existing tests, and the locally running application.  
 **Deliverable:** Findings and improvement recommendations only; application implementation was not changed by this review.
@@ -285,3 +287,11 @@ The existing automated checks provide a sound baseline for implementation work. 
 - Fixed an additional SQLite failure: suffixed turn IDs were invalid. Stable hexadecimal IDs and duplicate prevention now save health turns correctly. Lost server handles are invalidated for explicit context restoration on retry.
 - Restored the configured Ollama runtime and started a gateway without source autoreload. Increased the Next.js rewrite timeout from 30 to 180 seconds to accommodate the gateway's bounded AI operations. Public Bonsai document explanation, contextual follow-up, and saved-chat continuation passed using synthetic text. Synthetic mixed-language medicine image recognition returned the label and preserved its strength/unit; Nepali transcription still needed correction.
 - The reviewed health library and medicine directory are still empty. Health/medicine medical-answer acceptance remains blocked by reviewed content. Live generated-audio TTS/STT checks establish service connectivity, not native-speaker accuracy or physical-device microphone/speaker acceptance.
+
+## 10 October update: health education and explicitly included user context
+
+The global empty-reviewed-library message has been replaced for supported general education: five public WHO/NHS topics provide 20 question phrasings per language, source citations and contextual follow-ups. These original summaries and Nepali translations are labeled `public_reference`, not clinically reviewed. Reviewed clinical/medicine catalogs remain empty. Unknown topics still require an appropriate source; this is bounded education, not unrestricted medical generation.
+
+Each new health/document/medicine chat now asks whether to include saved user context. An editable 4,000-character preview combines user notes and prior user dialogue/reviewed document text. No context is sent when declined, and the API rejects supplied context without inclusion permission. Notes and decisions persist in device SQLite, existing chats preserve their snapshots, and new chats do not inherit earlier choices. User questions are labeled as unverified prior words, never converted into inferred diagnoses.
+
+Validation: 243 backend tests and 31 frontend tests passed, including permission isolation, evidence validation, persistence, bounds and context-free chats; contracts/type checking/lint and a production build passed. Live Bonsai and Qwen returned the same sourced English fever definition; Bonsai answered the English medical-help follow-up using the fever-care section and produced the Nepali source answer. Browser checks confirmed profile editing, a fresh prompt on New chat, independent and explicitly included chats, and real sourced health answers. Browser testing used synthetic preference text and general questions, preserving existing records.
