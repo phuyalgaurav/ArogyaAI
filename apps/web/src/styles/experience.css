@@ -198,14 +198,23 @@ body {
   flex-wrap: wrap;
 }
 .workspace-shell .preview-container {
-  background: #0f1712;
+  overflow: auto;
+  background: #eef1eb;
 }
-.workspace-shell .preview-toolbar {
+.workspace-shell .preview-controls-overlay {
+  position: static;
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
   background: #fff;
-  padding: 10px 14px;
+  padding: 8px;
+}
+.workspace-shell .guide-card {
+  border-radius: 0;
+  border: 0;
+  border-top: 1px solid #dce3da;
+  padding: 16px 0;
+  box-shadow: none;
 }
 .workspace-shell .notice-info {
   background: #f0f4ef;

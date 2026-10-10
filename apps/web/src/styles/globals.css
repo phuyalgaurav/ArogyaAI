@@ -266,7 +266,7 @@ footer {
   .shell {
     padding: 0 22px;
   }
-  .app-header {
+  header {
     min-height: 96px;
     align-items: flex-start;
     padding: 24px 0;
@@ -456,6 +456,13 @@ footer {
 }
 
 /* Chat Section */
+.chat-section {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 24px;
+  margin: 24px 0;
+}
 .chat-header {
   margin-bottom: 20px;
   border-bottom: 1px solid var(--line);
@@ -732,6 +739,7 @@ footer {
 
 /* Knowledge View */
 .knowledge-view,
+.medicine-view,
 .privacy-view {
   background: #fff;
   border: 1px solid var(--line);
@@ -1174,6 +1182,11 @@ footer {
 }
 
 /* Local chat archive */
+.history-workspace {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 32px;
+}
 .history-toolbar,
 .history-row-actions,
 .chat-history-status {
@@ -1283,6 +1296,9 @@ footer {
   margin-top: 22px;
 }
 @media (max-width: 760px) {
+  .history-workspace {
+    padding: 20px 16px;
+  }
   .history-storage-grid {
     grid-template-columns: 1fr;
   }

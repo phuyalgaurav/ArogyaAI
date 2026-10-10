@@ -1,11 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import { type KeyboardEvent, useEffect, useRef, useState } from "react";
-import {
-  type WorkspaceTab,
-  workspacePaths,
-} from "@/components/layout/navigation";
+import type { WorkspaceTab } from "@/components/layout/TaskHome";
 import { WorkspaceIcon } from "@/components/layout/WorkspaceIcon";
 
 type NavigationItem = {
@@ -33,7 +29,7 @@ export function WorkspaceSidebar({
   preview: string;
   languageLabel: string;
   onLocale: (locale: "en" | "ne" | "tam") => void;
-  onNavigate: (target: WorkspaceTab) => boolean;
+  onNavigate: (target: WorkspaceTab) => void;
   onOpenPrivacy?: () => void;
   onOpenEngines?: () => void;
 }) {
@@ -64,10 +60,9 @@ export function WorkspaceSidebar({
   }, [drawerOpen]);
 
   function navigate(target: WorkspaceTab) {
-    if (busy || !onNavigate(target)) return false;
     drawer.current?.close();
     setDrawerOpen(false);
-    return true;
+    onNavigate(target);
   }
   function keepFocusInDrawer(event: KeyboardEvent<HTMLDialogElement>) {
     if (event.key !== "Tab") return;
@@ -87,19 +82,18 @@ export function WorkspaceSidebar({
     }
   }
   const brand = (
-    <Link
-      href={workspacePaths.dashboard}
+    <button
+      type="button"
       className="brand"
-      aria-label={ne ? "ArogyaAI ड्यासबोर्ड" : "ArogyaAI home"}
-      onNavigate={(event) => {
-        if (!navigate("dashboard")) event.preventDefault();
-      }}
+      disabled={busy}
+      aria-label="ArogyaAI home"
+      onClick={() => navigate("dashboard")}
     >
       <span className="brand-icon" aria-hidden="true">
         +
       </span>
       Arogya<span>AI</span>
-    </Link>
+    </button>
   );
   function contents() {
     return (
@@ -108,23 +102,19 @@ export function WorkspaceSidebar({
           {brand}
           <span className="sidebar-preview">{preview}</span>
         </header>
-        <nav
-          className="workspace-navigation"
-          aria-label={ne ? "मुख्य मेनु" : "Main navigation"}
-        >
+        <nav className="workspace-navigation" aria-label="Main navigation">
           {items.map((item) => (
-            <Link
-              href={workspacePaths[item.id]}
+            <button
+              type="button"
+              disabled={busy}
               key={item.id}
-              onNavigate={(event) => {
-                if (!navigate(item.id)) event.preventDefault();
-              }}
+              onClick={() => navigate(item.id)}
               aria-current={active === item.id ? "page" : undefined}
               className={active === item.id ? "navigation-active" : ""}
             >
               <WorkspaceIcon name={item.icon} size={19} />
               <span>{item.label}</span>
-            </Link>
+            </button>
           ))}
         </nav>
         <div className="sidebar-footer-controls">

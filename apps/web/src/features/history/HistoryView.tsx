@@ -15,10 +15,6 @@ export function HistoryView({
 }) {
   const ne = locale === "ne";
   const history = useHistory();
-  const [serverOrigin, setServerOrigin] = useState("");
-  useEffect(() => {
-    setServerOrigin(historyOrigin());
-  }, []);
   const [modes, setModes] = useState<
     Record<string, "document" | "medicine" | "health">
   >({});
@@ -133,7 +129,21 @@ export function HistoryView({
   }
 
   return (
-    <section className="history-workspace" aria-labelledby="workspace-title">
+    <section className="history-workspace" aria-labelledby="history-title">
+      <header className="workspace-heading">
+        <span className="eyebrow">
+          {ne ? "सुरक्षित कुराकानीहरू" : "PAST CHAT RECORDS"}
+        </span>
+        <h1 id="history-title">
+          {ne ? "विगतका कुराकानीहरू" : "Past chat records"}
+        </h1>
+        <p>
+          {ne
+            ? "कागजात, औषधि तथा स्वास्थ्य सम्बन्धी विगतका सबै कुराकानी खोल्नुहोस् वा जारी राख्नुहोस्।"
+            : "Find and continue a document, medicine or health conversation."}
+        </p>
+      </header>
+
       <button
         type="button"
         className="btn btn-outline"
@@ -320,9 +330,7 @@ export function HistoryView({
             <p>
               {history.server ? "Enabled on " : "When allowed, copy chats to "}
               <span className="history-server-address">
-                {history.server?.origin ||
-                  serverOrigin ||
-                  (ne ? "सर्भर" : "the configured server")}
+                {history.server?.origin || historyOrigin()}
               </span>
             </p>
             {history.server && (
@@ -383,7 +391,7 @@ export function HistoryView({
         </h2>
         <p>
           {action === "enable"
-            ? `Saved message history and new conversations with their reviewed document or medicine context will be sent to ${serverOrigin} and stored in a separate SQLite file for up to 30 days. Only enable this on a server you trust.`
+            ? `Saved message history and new conversations with their reviewed document or medicine context will be sent to ${historyOrigin()} and stored in a separate SQLite file for up to 30 days. Only enable this on a server you trust.`
             : action === "disable"
               ? "Stop future uploads and delete this history vault on the server. Local chats stay on this browser."
               : "Delete this chat locally and from its enabled server copy. This cannot be undone."}
