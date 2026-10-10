@@ -556,6 +556,15 @@ export function ChatView({
   }
 
   function renderStatusNote(response: ArogyaResponse) {
+    if (response.safety.rule_ids.includes("public_source_education")) {
+      return (
+        <p className="history-snapshot-note">
+          {ne
+            ? "WHO/NHS स्रोतमा आधारित सामान्य जानकारी। नेपाली पाठ ArogyaAI को अनुवाद हो; व्यक्तिगत चिकित्सा सल्लाह होइन।"
+            : "General information based on WHO/NHS sources. This is not a clinician-reviewed answer or personal medical advice."}
+        </p>
+      );
+    }
     switch (response.status) {
       case "urgent":
         return (
@@ -699,11 +708,11 @@ export function ChatView({
                 : questionsState === "loading"
                   ? ne
                     ? "समीक्षित सामग्री जाँच्दै…"
-                    : "Checking reviewed content…"
+                    : "Loading health topics…"
                   : questionsState === "failed"
                     ? ne
                       ? "सामग्री जाँच्न सकिएन। जडान जाँचेर पुनः खोल्नुहोस्।"
-                      : "Could not check reviewed content. Check your connection and reopen this page."
+                      : "Could not load health topics. Check your connection and reopen this page."
                     : text.noQuestionsAvailable}
             </p>
           </div>

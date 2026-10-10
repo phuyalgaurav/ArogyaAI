@@ -56,16 +56,16 @@ export const copy = {
     // Chat Interface
     chatTitle: "Ask a Health Question",
     chatSubtitle:
-      "Ask by typing or Nepali voice. Health answers require available reviewed content.",
-    chatPlaceholder: "Type a health question or select a reviewed topic...",
+      "Ask by typing or Nepali voice. Explore source-backed health information and follow-up questions.",
+    chatPlaceholder: "Type a health question or select a topic...",
     askBtn: "Ask ArogyaAI",
     consulting: "Analyzing evidence…",
-    suggestedQuestions: "Reviewed Topics & Questions",
+    suggestedQuestions: "Health topics to explore",
     noQuestionsAvailable:
-      "No approved questions found in the catalog. The default catalog is empty pending clinical review.",
+      "Ask a general health question. Answers include their sources; personal treatment decisions need a health professional.",
     openImageReader: "Read an image",
     openLanguageTools: "Open language & voice",
-    browseReviewedQuestions: "Browse reviewed questions",
+    browseReviewedQuestions: "Browse health questions",
     clearChat: "New chat",
     modeLabel: "Processing",
     modeStatic: "Safety and reference checks",
@@ -77,7 +77,7 @@ export const copy = {
     abstainedLabel: "Abstained from generative advice",
 
     // Answer Statuses
-    statusAnswered: "Reviewed Source Answer",
+    statusAnswered: "Answered with sources",
     statusClarification: "Needs Clarification",
     statusProfessionalReview: "Professional Consultation Required",
     statusUrgent: "Urgent Medical Attention Advised",
@@ -91,7 +91,7 @@ export const copy = {
     // Knowledge Catalog
     knowledgeTitle: "Reviewed Health Knowledge",
     knowledgeSubtitle:
-      "Browse approved medical sections, source licenses, and validated questions.",
+      "Explore public health references and clinically reviewed sources. Each source shows its status.",
     knowledgeEmptyTitle: "Catalog is Currently Empty",
     knowledgeEmptyBody:
       "To safeguard public health in Nepal, ArogyaAI strictly answers from licensed, clinically reviewed sources. No production sources have been approved yet.",
@@ -195,16 +195,16 @@ export const copy = {
     // Chat Interface
     chatTitle: "स्वास्थ्य प्रश्न सोध्नुहोस्",
     chatSubtitle:
-      "उत्तरहरू स्वीकृत चिकित्सा स्रोतबाट मात्र निकालिन्छन्। व्यक्तिगत जोखिमपूर्ण निर्णयहरू स्वास्थ्यकर्मीमा पठाइन्छ।",
+      "लेखेर वा बोलेर स्रोतमा आधारित स्वास्थ्य जानकारी सोध्नुहोस्। सोही विषयमा थप प्रश्न पनि सोध्न सक्नुहुन्छ।",
     chatPlaceholder: "स्वास्थ्य प्रश्न लेख्नुहोस् वा तलबाट विषय छान्नुहोस्…",
     askBtn: "सोध्नुहोस्",
     consulting: "प्रमाण जाँच हुँदैछ…",
-    suggestedQuestions: "स्वीकृत विषय र प्रश्नहरू",
+    suggestedQuestions: "स्वास्थ्य विषय र प्रश्नहरू",
     noQuestionsAvailable:
-      "पुस्तकालयमा कुनै स्वीकृत प्रश्न भेटिएन। क्लिनिकल समीक्षा नभएसम्म मुख्य पुस्तकालय खाली छ।",
+      "सामान्य स्वास्थ्य प्रश्न सोध्नुहोस्। उत्तरसँग स्रोत देखाइन्छ; व्यक्तिगत उपचारका लागि स्वास्थ्यकर्मीको सल्लाह लिनुहोस्।",
     openImageReader: "तस्बिर पढ्नुहोस्",
     openLanguageTools: "भाषा र आवाज खोल्नुहोस्",
-    browseReviewedQuestions: "स्वीकृत प्रश्नहरू हेर्नुहोस्",
+    browseReviewedQuestions: "स्वास्थ्य प्रश्नहरू हेर्नुहोस्",
     clearChat: "कुराकानी खाली गर्नुहोस्",
     modeLabel: "प्रक्रिया",
     modeStatic: "सुरक्षा र स्रोतको जाँच",
@@ -216,7 +216,7 @@ export const copy = {
     abstainedLabel: "अपुष्ट सल्लाह दिन अस्वीकार",
 
     // Answer Statuses
-    statusAnswered: "समीक्षित स्रोतबाट उत्तर",
+    statusAnswered: "स्रोतमा आधारित उत्तर",
     statusClarification: "थप स्पष्टता आवश्यक",
     statusProfessionalReview: "चिकित्सकको परामर्श आवश्यक",
     statusUrgent: "तत्काल आकस्मिक उपचार आवश्यक",
@@ -230,7 +230,7 @@ export const copy = {
     // Knowledge Catalog
     knowledgeTitle: "स्वीकृत स्वास्थ्य पुस्तकालय",
     knowledgeSubtitle:
-      "समीक्षा गरिएका चिकित्सा सामग्री, इजाजतपत्र र प्रमाणित प्रश्नहरू हेर्नुहोस्।",
+      "सार्वजनिक स्वास्थ्य जानकारी र समीक्षा गरिएका स्रोतहरू हेर्नुहोस्। प्रत्येक स्रोतको अवस्था छुट्टै देखाइन्छ।",
     knowledgeEmptyTitle: "पुस्तकालय हाल खाली छ",
     knowledgeEmptyBody:
       "नेपालको जनस्वास्थ्य सुरक्षालाई ध्यानमा राखी आरोग्यएआईले प्रमाणित स्रोतबाट मात्र उत्तर दिन्छ। हालसम्म कुनै पनि उत्पादन स्रोत स्वीकृत भइसकेको छैन।",

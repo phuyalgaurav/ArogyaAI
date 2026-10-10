@@ -355,3 +355,32 @@ fieldset.history-category-pills {
   flex: 1 1 100%;
   font-weight: 600;
 }
+.profile-control {
+  margin: 0 0 1rem;
+  padding: 0.65rem 1rem;
+  border: 1px solid var(--border, #dce5df);
+  border-radius: 0.75rem;
+  font-size: 0.85rem;
+}
+.profile-control-row,
+.profile-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+.profile-label {
+  display: grid;
+  gap: 0.5rem;
+  margin: 1rem 0;
+}
+.profile-label textarea {
+  width: 100%;
+  min-width: 0;
+  padding: 0.75rem;
+  border: 1px solid var(--border, #dce5df);
+  border-radius: 0.5rem;
+  font: inherit;
+  resize: vertical;
+}

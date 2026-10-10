@@ -137,6 +137,42 @@ class ChatSQLite {
     const row = this.rows("SELECT payload FROM contexts WHERE id=?", [id])[0];
     return row ? JSON.parse(row.payload) : null;
   }
+  profile() {
+    const row = this.rows(
+      "SELECT value FROM preferences WHERE key='user-profile'",
+    )[0];
+    return row ? JSON.parse(row.value) : { notes: "", choices: {} };
+  }
+  updateProfile(change) {
+    const profile = this.profile();
+    if (change.clear) {
+      profile.notes = "";
+      profile.choices = {};
+    }
+    if (change.notes !== undefined) {
+      if (typeof change.notes !== "string" || change.notes.length > 2000)
+        throw new Error("Profile notes must be at most 2000 characters.");
+      profile.notes = change.notes;
+    }
+    if (change.choice) {
+      const { id, context } = change.choice;
+      if (
+        !/^[a-f0-9]{32}$/.test(id) ||
+        typeof context !== "string" ||
+        context.length > 4000
+      )
+        throw new Error("Invalid per-chat context choice.");
+      profile.choices[id] = context;
+      const keys = Object.keys(profile.choices);
+      for (const old of keys.slice(0, Math.max(0, keys.length - 100)))
+        delete profile.choices[old];
+    }
+    this.db.run(
+      "INSERT INTO preferences(key,value) VALUES('user-profile',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+      [JSON.stringify(profile)],
+    );
+    return profile;
+  }
   putContext(id, value) {
     if (
       !/^[a-f0-9]{32}$/.test(id) ||
@@ -166,6 +202,11 @@ class ChatSQLite {
       );
     this.db.run("DELETE FROM conversations WHERE id=?", [id]);
     this.db.run("DELETE FROM contexts WHERE id=?", [id]);
+    const profile = this.profile();
+    delete profile.choices[id];
+    this.db.run("UPDATE preferences SET value=? WHERE key='user-profile'", [
+      JSON.stringify(profile),
+    ]);
     this.db.run("INSERT OR IGNORE INTO deleted(id) VALUES(?)", [id]);
     this.db.run("VACUUM");
   }

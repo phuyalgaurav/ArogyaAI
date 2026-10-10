@@ -50,7 +50,7 @@ export function TaskHome({
     chatTitle: ne ? "स्वास्थ्य जिज्ञासा" : "Quick health question",
     chatBody: ne
       ? "नेपालीमा बोल्नुहोस् वा टाइप गर्नुहोस्। जवाफका लागि समीक्षित सामग्री चाहिन्छ।"
-      : "Ask by typing or Nepali voice. Answers depend on available reviewed content.",
+      : "Ask by typing or Nepali voice, explore health sources and continue with follow-up questions.",
     chatAction: ne ? "प्रश्न सोध्नुहोस्" : "Ask a question",
     recentHeading: ne ? "हालैका कुराकानीहरू" : "Recent conversations",
     viewAllHistory: ne ? "सबै विगतका कुराकानीहरू हेर्नुहोस्" : "View all past records",
@@ -119,8 +119,8 @@ export function TaskHome({
       {runtime?.reviewed_questions === 0 && (
         <p className="notice" role="status">
           {ne
-            ? "समीक्षित स्वास्थ्य जवाफ अहिले उपलब्ध छैनन्। कागजातको पाठ पढ्न र जाँच्न सक्नुहुन्छ।"
-            : "Reviewed health answers are currently unavailable. Document transcription and wording review remain available."}
+            ? "सामान्य स्वास्थ्य जानकारी WHO/NHS स्रोतमा आधारित छ। व्यक्तिगत उपचार र औषधिको पहिचानका लागि स्वास्थ्यकर्मीको समीक्षा चाहिन्छ।"
+            : "General health information uses WHO/NHS sources. Personal treatment and medicine identity still need professional review."}
         </p>
       )}
       {/* Task starts */}

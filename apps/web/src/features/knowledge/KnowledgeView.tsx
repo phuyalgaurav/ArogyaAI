@@ -215,7 +215,9 @@ export function KnowledgeView({
                     <span
                       className={`status-pill status-${sourceData.review_status}`}
                     >
-                      {sourceData.review_status}
+                      {sourceData.review_status === "public_reference"
+                        ? "Public education source · not clinically reviewed"
+                        : sourceData.review_status}
                     </span>
                   </div>
                   <div>

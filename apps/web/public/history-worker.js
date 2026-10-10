@@ -144,6 +144,8 @@ async function execute(action, data) {
     const db = new self.ChatSQLite(engine, stored?.bytes);
     try {
       if (action === "context") return db.context(data);
+      if (action === "profile") return db.profile();
+      if (action === "put-profile") db.updateProfile(data);
       if (action === "put-context") db.putContext(data.id, data.snapshot);
       if (action === "export") return { bytes: db.export() };
       if (action === "put") db.put(data);
@@ -180,6 +182,7 @@ async function execute(action, data) {
         )
       ) {
         result.storage = (await privateFile()) ? "private_file" : "indexeddb";
+        if (action === "put-profile") return db.profile();
         return result;
       }
     } finally {

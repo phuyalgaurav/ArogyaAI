@@ -185,7 +185,7 @@ export async function fetchQuestions(
   limit: number = 50,
   signal?: AbortSignal,
 ): Promise<ReviewedQuestion[]> {
-  const url = `${getApiBaseUrl()}/api/v1/knowledge/questions?language=${encodeURIComponent(language)}&limit=${limit}`;
+  const url = `${getApiBaseUrl()}/api/v1/knowledge/questions?language=${encodeURIComponent(language)}&limit=${limit}&include_public=true`;
   const response = await fetch(url, {
     method: "GET",
     signal: signal || AbortSignal.timeout(5000),

@@ -21,6 +21,34 @@ const chat = (
   messages: [{ id: id(message), sender: "user", text, timestamp: time }],
 });
 
+test("profile details and explicit per-chat decisions survive SQLite persistence", () => {
+  const db = new ChatSQLite(SQL);
+  assert.deepEqual(db.profile(), { notes: "", choices: {} });
+  db.updateProfile({ notes: "User-provided allergy note" });
+  db.updateProfile({
+    choice: { id: id(1), context: "Explicitly included context" },
+  });
+  db.updateProfile({ choice: { id: id(2), context: "" } });
+  const reopened = new ChatSQLite(SQL, db.export());
+  assert.equal(reopened.profile().notes, "User-provided allergy note");
+  assert.equal(
+    reopened.profile().choices[id(1)],
+    "Explicitly included context",
+  );
+  assert.equal(reopened.profile().choices[id(2)], "");
+  assert.equal(reopened.profile().choices[id(3)], undefined);
+  reopened.remove(id(1));
+  assert.equal(reopened.profile().choices[id(1)], undefined);
+  assert.throws(
+    () => reopened.updateProfile({ notes: "x".repeat(2001) }),
+    /2000/,
+  );
+  reopened.updateProfile({ clear: true });
+  assert.deepEqual(reopened.profile(), { notes: "", choices: {} });
+  reopened.close();
+  db.close();
+});
+
 test("real SQLite export reopens with complete messages and dates", () => {
   const first = new ChatSQLite(SQL);
   first.put(chat());

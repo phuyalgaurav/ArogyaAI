@@ -16,6 +16,10 @@ import { HistoryProvider, useHistory } from "@/features/history/HistoryContext";
 import { HistoryView } from "@/features/history/HistoryView";
 import { KnowledgeView } from "@/features/knowledge/KnowledgeView";
 import { MedicineView } from "@/features/medicines/MedicineView";
+import {
+  ProfileControl,
+  ProfileProvider,
+} from "@/features/profile/ProfileContext";
 import type { ProcessingLocation } from "@/features/settings/device-specs";
 import { EnginesView } from "@/features/settings/EnginesView";
 import { ModelProvider } from "@/features/settings/ModelContext";
@@ -256,6 +260,10 @@ function MainContent() {
       />
 
       <main id="main" tabIndex={-1} className="workspace-main">
+        <ProfileControl
+          active={["chat", "transcription", "medicines"].includes(activeTab)}
+          locale={locale}
+        />
         {navigationError && (
           <div className="notice notice-warning" role="alert">
             {navigationError}
@@ -419,9 +427,11 @@ export default function Home() {
     <ModelProvider>
       <SessionProvider>
         <HistoryProvider>
-          <ConversationProvider>
-            <MainContent />
-          </ConversationProvider>
+          <ProfileProvider>
+            <ConversationProvider>
+              <MainContent />
+            </ConversationProvider>
+          </ProfileProvider>
         </HistoryProvider>
       </SessionProvider>
     </ModelProvider>

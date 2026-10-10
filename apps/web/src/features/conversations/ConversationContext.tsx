@@ -19,6 +19,7 @@ import {
 } from "react";
 import { useSession } from "@/context/SessionContext";
 import { useHistory } from "@/features/history/HistoryContext";
+import { useProfile } from "@/features/profile/ProfileContext";
 import { ApiError, createRequestId } from "@/lib/api";
 import { type ConversationAccess, conversationRequest } from "./api";
 
@@ -84,8 +85,9 @@ const Context = createContext<ContextValue | null>(null);
 export function ConversationProvider({ children }: { children: ReactNode }) {
   const session = useSession();
   const history = useHistory();
-  const latest = useRef({ session, history });
-  latest.current = { session, history };
+  const profile = useProfile();
+  const latest = useRef({ session, history, profile });
+  latest.current = { session, history, profile };
   const entries = useRef(new Map<string, Entry>());
   const pending = useRef<AbortController | null>(null);
   const retry = useRef(new Map<string, string>());
@@ -198,6 +200,7 @@ export function ConversationProvider({ children }: { children: ReactNode }) {
       } catch (failure) {
         if (!(failure instanceof ApiError) || failure.status !== 404)
           throw failure;
+        const userContext = await latest.current.profile.contextFor(alias);
         snapshot = await conversationRequest<Conversation>(access, "", "POST", {
           id: alias,
           mode,
@@ -205,6 +208,8 @@ export function ConversationProvider({ children }: { children: ReactNode }) {
           title: "New conversation",
           storage: server ? "server_history" : "session",
           allow_context_storage: Boolean(server),
+          user_context: userContext,
+          include_user_context: Boolean(userContext),
         });
       }
     }
