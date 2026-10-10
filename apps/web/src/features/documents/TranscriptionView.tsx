@@ -503,46 +503,57 @@ export function TranscriptionView({
       {answerSpeech.error && <p role="alert">{answerSpeech.error}</p>}
       {answerSpeech.busy && <p role="status">Preparing Nepali speech…</p>}
 
-      <p className="storage-note" role="status">
-        {conversation.error ||
-          (conversation.loading
-            ? ne
-              ? "प्रक्रिया चल्दै छ…"
-              : "Processing on the server…"
-            : ne
-              ? "सच्याइएको पाठ र कुराकानी यस उपकरणमा सुरक्षित हुन्छ। जारी राख्दा सर्भरमा पठाइन्छ।"
-              : "Reviewed conversations are saved on this device. Unsubmitted drafts stay in this tab.")}
-      </p>
-      {conversation.loading && (
-        <button
-          type="button"
-          className="btn btn-outline"
-          onClick={() =>
-            void conversation
-              .cancel()
-              .catch((failure) => setExplainError(String(failure)))
-          }
-        >
-          {ne ? "रोक्नुहोस्" : "Cancel processing"}
-        </button>
-      )}
-      {(snapshot || draftText.trim() || file) && (
-        <button
-          type="button"
-          className="btn btn-outline"
-          disabled={busy}
-          onClick={() => {
-            history.newChat();
-            setDraftText("");
-            setExplanationResult(null);
-            setTranscriptionChecked(false);
-          }}
-        >
-          {ne ? "नयाँ कागजात कुराकानी" : "New document conversation"}
-        </button>
-      )}
+      <div className="transcription-top-bar">
+        <div className="transcription-status-pill" role="status">
+          <span
+            className={`status-dot ${conversation.loading || busy ? "dot-pulsing" : "dot-active"}`}
+            aria-hidden="true"
+          />
+          <span>
+            {conversation.error ||
+              (conversation.loading
+                ? ne
+                  ? "प्रक्रिया चल्दै छ…"
+                  : "Processing on the server…"
+                : ne
+                  ? "सच्याइएको पाठ र कुराकानी यस उपकरणमा सुरक्षित हुन्छ।"
+                  : "Reviewed conversations are safely preserved locally on this device.")}
+          </span>
+        </div>
+        <div className="transcription-top-actions">
+          {conversation.loading && (
+            <button
+              type="button"
+              className="btn btn-sm btn-outline"
+              onClick={() =>
+                void conversation
+                  .cancel()
+                  .catch((failure) => setExplainError(String(failure)))
+              }
+            >
+              {ne ? "रोक्नुहोस्" : "Cancel"}
+            </button>
+          )}
+          {(snapshot || draftText.trim() || file) && (
+            <button
+              type="button"
+              className="btn btn-sm btn-secondary btn-new-doc"
+              disabled={busy}
+              onClick={() => {
+                history.newChat();
+                setDraftText("");
+                setExplanationResult(null);
+                setTranscriptionChecked(false);
+              }}
+            >
+              <span aria-hidden="true">＋</span>
+              <span>{ne ? "नयाँ कुराकानी" : "New Conversation"}</span>
+            </button>
+          )}
+        </div>
+      </div>
       {activeAttachment?.recognition && !file && (
-        <p role="note">
+        <p role="note" className="storage-note">
           {ne
             ? "मूल तस्बिर सुरक्षित हुँदैन। तुलना गर्न पुनः छान्नुहोस्।"
             : "The original image is not saved. Choose it again to compare the wording."}
@@ -559,7 +570,7 @@ export function TranscriptionView({
           className={`btn-mode-tab ${inputMode === "image" ? "active" : ""}`}
           onClick={() => setInputMode("image")}
         >
-          {ne ? "फोटोबाट उतार्नुहोस्" : "Photo or image"}
+          📷 {ne ? "फोटो वा तस्बिर" : "Photo or Image"}
         </button>
         <button
           type="button"
@@ -567,12 +578,13 @@ export function TranscriptionView({
           className={`btn-mode-tab ${inputMode === "paste" ? "active" : ""}`}
           onClick={() => setInputMode("paste")}
         >
-          {ne ? "पाठ पेस्ट गर्नुहोस्" : "Paste document text"}
+          📝 {ne ? "पाठ पेस्ट गर्नुहोस्" : "Paste Document Text"}
         </button>
       </fieldset>
 
       <details className="transcription-options-drawer">
         <summary>
+          ⚙️{" "}
           {ne
             ? "प्रक्रियाका विकल्पहरू र मोडल चयन"
             : "Processing options & reader selection"}
@@ -675,6 +687,14 @@ export function TranscriptionView({
                     </button>
                     <button
                       type="button"
+                      className="zoom-badge"
+                      title={ne ? "१००% मा फर्काउनुहोस्" : "Reset zoom to 100%"}
+                      onClick={() => setZoom(1)}
+                    >
+                      {Math.round(zoom * 100)}%
+                    </button>
+                    <button
+                      type="button"
                       className="btn btn-sm btn-outline"
                       onClick={() => {
                         setFile(null);
@@ -687,12 +707,18 @@ export function TranscriptionView({
                   </div>
                 </div>
               ) : (
+                // biome-ignore lint/a11y/useKeyWithClickEvents: Click triggers internal file picker for mouse convenience
                 <section
                   aria-label={ne ? "कागजात अपलोड क्षेत्र" : "Document upload zone"}
                   className={`dropzone-box ${isDragging ? "dropzone-active" : ""}`}
                   onDragOver={handleDragOver}
                   onDragLeave={handleDragLeave}
                   onDrop={handleDrop}
+                  onClick={(e) => {
+                    if ((e.target as HTMLElement).tagName !== "BUTTON") {
+                      pickerRef.current?.click();
+                    }
+                  }}
                 >
                   <WorkspaceIcon name="image" size={48} />
                   <p>
@@ -773,7 +799,7 @@ export function TranscriptionView({
 
           {file && (
             <div className="recognition-action">
-              <p>
+              <p className="recognition-action-desc">
                 {processingLocation === "device"
                   ? ne
                     ? "तस्बिर यस उपकरणमा मात्र पढिन्छ। छापिएको पाठका लागि उपयुक्त।"
@@ -794,7 +820,13 @@ export function TranscriptionView({
                   else void startServerRecognition(file, rotation);
                 }}
               >
-                {ne ? "अनुमति दिनुहोस् र तस्बिर पढ्नुहोस्" : "Allow and read image"}
+                {busy
+                  ? ne
+                    ? "तस्बिर पढ्दै छ…"
+                    : "Reading image…"
+                  : ne
+                    ? "अनुमति दिनुहोस् र तस्बिर पढ्नुहोस्"
+                    : "Allow and read image"}
               </button>
             </div>
           )}
