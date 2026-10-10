@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { WorkspaceLayout } from "@/components/layout/WorkspaceLayout";
 import "@fontsource/noto-sans-devanagari/400.css";
 import "@fontsource/noto-sans-devanagari/600.css";
 import "@/styles/globals.css";
@@ -22,7 +23,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <WorkspaceLayout>{children}</WorkspaceLayout>
+      </body>
     </html>
   );
 }

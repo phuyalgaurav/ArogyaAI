@@ -2,15 +2,9 @@
 
 import type { RuntimeStatus } from "@arogya/contracts";
 import { useEffect, useRef, useState } from "react";
+import type { WorkspaceTab } from "@/components/layout/navigation";
 import { WorkspaceIcon } from "@/components/layout/WorkspaceIcon";
 import { useHistory } from "@/features/history/HistoryContext";
-
-export type WorkspaceTab =
-  | "dashboard"
-  | "transcription"
-  | "medicines"
-  | "history"
-  | "chat";
 
 interface TaskHomeProps {
   locale: "en" | "ne" | "tam";
@@ -30,11 +24,6 @@ export function TaskHome({
   const recentChats = history.conversations.slice(0, 4);
 
   const t = {
-    eyebrow: ne ? "स्वास्थ्य सहायता · सिधा पहुँच" : "YOUR HEALTH · CONTINUOUS CARE",
-    title: ne ? "ड्यासबोर्ड" : "Dashboard",
-    intro: ne
-      ? "कागजात उतार्नुहोस्, औषधि पहिचान गर्नुहोस् वा स्वास्थ्य जिज्ञासा सोध्नुहोस्।"
-      : "Transcribe a prescription or report, identify a medicine, or ask a health question in plain language.",
     transcriptionTitle: ne
       ? "प्रेस्क्रिप्सन र रिपोर्ट उतार"
       : "Prescription / Report transcription",
@@ -102,12 +91,7 @@ export function TaskHome({
   }
 
   return (
-    <section className="dashboard-container" aria-labelledby="dashboard-title">
-      <header className="dashboard-header">
-        <h1 id="dashboard-title">{t.title}</h1>
-        <p className="dashboard-intro">{t.intro}</p>
-      </header>
-
+    <section className="dashboard-container" aria-labelledby="workspace-title">
       {runtime &&
         runtime.engines.length > 0 &&
         !runtime.engines.some((e) => e.state === "ready") && (
@@ -116,69 +100,66 @@ export function TaskHome({
           </div>
         )}
 
+      <section className="dashboard-actions-grid" aria-label="Core actions">
+        <button
+          type="button"
+          className="dashboard-task"
+          aria-label={t.transcriptionAction}
+          onClick={() => onOpen("transcription")}
+        >
+          <WorkspaceIcon name="image" size={23} />
+          <span>
+            <strong>{t.transcriptionTitle}</strong>
+            <small>
+              {ne
+                ? "फोटो वा पाठबाट सुरु गर्नुहोस्"
+                : "Start with a photo or document text"}
+            </small>
+          </span>
+          <WorkspaceIcon name="arrow" size={18} />
+        </button>
+        <button
+          type="button"
+          className="dashboard-task"
+          aria-label={t.medicineAction}
+          onClick={() => onOpen("medicines")}
+        >
+          <WorkspaceIcon name="medicine" size={23} />
+          <span>
+            <strong>{t.medicineTitle}</strong>
+            <small>
+              {ne
+                ? "लेबलको फोटो वा औषधिको नाम"
+                : "Use a label photo or medicine name"}
+            </small>
+          </span>
+          <WorkspaceIcon name="arrow" size={18} />
+        </button>
+        <button
+          type="button"
+          className="dashboard-task"
+          aria-label={t.chatAction}
+          onClick={() => onOpen("chat")}
+        >
+          <WorkspaceIcon name="ask" size={23} />
+          <span>
+            <strong>{t.chatTitle}</strong>
+            <small>
+              {ne
+                ? "लेख्नुहोस् वा नेपालीमा बोल्नुहोस्"
+                : "Type a question or speak in Nepali"}
+            </small>
+          </span>
+          <WorkspaceIcon name="arrow" size={18} />
+        </button>
+      </section>
       {runtime?.reviewed_questions === 0 && (
-        <p className="notice" role="status">
+        <p className="dashboard-source-note">
           {ne
-            ? "सामान्य स्वास्थ्य जानकारी WHO/NHS स्रोतमा आधारित छ। व्यक्तिगत उपचार र औषधिको पहिचानका लागि स्वास्थ्यकर्मीको समीक्षा चाहिन्छ।"
-            : "General health information uses WHO/NHS sources. Personal treatment and medicine identity still need professional review."}
+            ? "सामान्य जानकारी WHO/NHS स्रोतमा आधारित छ। उपचार र औषधिको पहिचान स्वास्थ्यकर्मीले जाँच्नुपर्छ।"
+            : "General information uses WHO/NHS sources. Ask a clinician about treatment or medicine identity."}
         </p>
       )}
-      {/* Task starts */}
-      <section className="dashboard-actions-grid" aria-label="Core actions">
-        <article className="dashboard-card">
-          <div className="dashboard-card-icon" aria-hidden="true">
-            <WorkspaceIcon name="image" size={28} />
-          </div>
-          <div className="dashboard-card-content">
-            <h2>{t.transcriptionTitle}</h2>
-            <p className="dashboard-card-desc">{t.transcriptionBody}</p>
-            <button
-              type="button"
-              className="btn btn-outline"
-              onClick={() => onOpen("transcription")}
-            >
-              <span>{t.transcriptionAction}</span>
-              <WorkspaceIcon name="arrow" size={16} />
-            </button>
-          </div>
-        </article>
-
-        <article className="dashboard-card">
-          <div className="dashboard-card-icon" aria-hidden="true">
-            <WorkspaceIcon name="medicine" size={28} />
-          </div>
-          <div className="dashboard-card-content">
-            <h2>{t.medicineTitle}</h2>
-            <p className="dashboard-card-desc">{t.medicineBody}</p>
-            <button
-              type="button"
-              className="btn btn-outline"
-              onClick={() => onOpen("medicines")}
-            >
-              <span>{t.medicineAction}</span>
-              <WorkspaceIcon name="arrow" size={16} />
-            </button>
-          </div>
-        </article>
-
-        <article className="dashboard-card">
-          <div className="dashboard-card-icon" aria-hidden="true">
-            <WorkspaceIcon name="ask" size={28} />
-          </div>
-          <div className="dashboard-card-content">
-            <h2>{t.chatTitle}</h2>
-            <p className="dashboard-card-desc">{t.chatBody}</p>
-            <button
-              type="button"
-              className="btn btn-outline"
-              onClick={() => onOpen("chat")}
-            >
-              <span>{t.chatAction}</span>
-              <WorkspaceIcon name="arrow" size={16} />
-            </button>
-          </div>
-        </article>
-      </section>
 
       {/* Recent Conversations Section */}
       <section

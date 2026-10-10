@@ -7,9 +7,10 @@ import { copy } from "@/lib/copy";
 
 interface PrivacyViewProps {
   locale: "en" | "ne" | "tam";
+  onOpenHistory: () => void;
 }
 
-export function PrivacyView({ locale }: PrivacyViewProps) {
+export function PrivacyView({ locale, onOpenHistory }: PrivacyViewProps) {
   const text = copy[locale === "ne" ? "ne" : "en"];
   const {
     token,
@@ -84,9 +85,11 @@ export function PrivacyView({ locale }: PrivacyViewProps) {
           below removes processing permissions and session metadata; chat
           history is managed separately.
         </p>
-        <a href="#history">
-          Open chat history to export, delete or manage server copies
-        </a>
+        <button type="button" className="text-button" onClick={onOpenHistory}>
+          {locale === "ne"
+            ? "कुराकानी निर्यात, मेटाउन वा सर्भर प्रतिलिपि व्यवस्थापन गर्न विगतका रेकर्ड खोल्नुहोस्"
+            : "Open chat history to export, delete or manage server copies"}
+        </button>
       </section>
       {/* Session Metadata Card */}
       <div className="session-card">

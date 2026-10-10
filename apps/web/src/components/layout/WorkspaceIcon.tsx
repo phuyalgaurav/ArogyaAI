@@ -10,6 +10,10 @@ const paths = {
   engines: "M3 17h3V9H3z M10 17h3V3h-3z M17 17h3V6h-3z M2 21h20",
   privacy: "M12 2 3 6v6c0 5 9 10 9 10s9-5 9-10V6z M8 12l3 3 5-6",
   arrow: "M4 12h16 M14 6l6 6-6 6",
+  send: "M12 20V4 M5 11l7-7 7 7",
+  stop: "M6 6h12v12H6z",
+  microphone:
+    "M9 5a3 3 0 0 1 6 0v7a3 3 0 0 1-6 0z M5 10v2a7 7 0 0 0 14 0v-2 M12 19v3 M8 22h8",
 };
 
 export function WorkspaceIcon({

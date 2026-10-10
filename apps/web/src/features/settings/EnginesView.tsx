@@ -131,9 +131,9 @@ export function EnginesView({
   };
   return (
     <section aria-labelledby="engines-title" className="engine-workspace">
-      <div className="workspace-heading">
+      <div className="dialog-section-header">
         <span className="eyebrow">{t.engines}</span>
-        <h1 id="engines-title">{t.modelTitle}</h1>
+        <h2 id="engines-title">{t.modelTitle}</h2>
         <p>{t.modelBody}</p>
       </div>
       <ModelChoice runtime={runtime} />
