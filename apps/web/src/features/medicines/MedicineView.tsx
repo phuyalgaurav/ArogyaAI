@@ -87,6 +87,9 @@ export function MedicineView({
   const [medicinePhoto, setMedicinePhoto] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [readingPhoto, setReadingPhoto] = useState(false);
+  const [photoMethod, setPhotoMethod] = useState<"printed_ocr" | "vision">(
+    "printed_ocr",
+  );
   const photoPicker = useRef<HTMLInputElement>(null);
   const cameraPicker = useRef<HTMLInputElement>(null);
 
@@ -145,11 +148,16 @@ export function MedicineView({
       validateImageFile(photoFile);
       setMedicinePhoto(photoFile);
       setReadingPhoto(true);
+      setError(null);
+      setLabelText("");
+      setQuery("");
+      setCandidates(null);
+      setActiveMedicine(null);
+      setLabelChecked(false);
       if (processingLocation === "device") {
         await localOcr.read(await prepareImage(photoFile, 0), "eng+nep");
         return;
       }
-      setError(null);
 
       let currentToken = session.token;
       if (!currentToken || session.isExpired) {
@@ -176,7 +184,7 @@ export function MedicineView({
           ne ? "ne" : "en",
           {
             kind: "medicine",
-            method: "vision",
+            method: photoMethod,
             image: {
               image_base64: btoa(binary),
               language: "eng+nep",
@@ -189,7 +197,11 @@ export function MedicineView({
         const label = result.attachments?.find(
           (item) => item.id === result.active_attachment_id,
         );
-        setLabelText(label?.original_text || "");
+        if (!label?.original_text?.trim())
+          throw new Error(
+            "No readable label found. Try a clearer photo, use visual reading, or type the label below.",
+          );
+        setLabelText(label.original_text);
         setQuery("");
         setCandidates(null);
         setActiveMedicine(null);
@@ -401,11 +413,7 @@ export function MedicineView({
   }
 
   return (
-    <section className="medicine-view" aria-labelledby="medicine-title">
-      <header className="medicine-header">
-        <h1 id="medicine-title">{text.medicineTitle}</h1>
-        <p className="medicine-subtitle">{text.medicineSubtitle}</p>
-      </header>
+    <section className="medicine-view" aria-labelledby="workspace-title">
       <p className="storage-note" role="status">
         {conversation.error ||
           (conversation.loading
@@ -443,6 +451,27 @@ export function MedicineView({
       </button>
       {medicinePhoto && (
         <div className="recognition-action">
+          {processingLocation !== "device" && (
+            <label>
+              {ne ? "लेबल पढ्ने तरिका" : "Label reading method"}
+              <select
+                value={photoMethod}
+                disabled={readingPhoto || conversation.loading}
+                onChange={(event) =>
+                  setPhotoMethod(event.target.value as "printed_ocr" | "vision")
+                }
+              >
+                <option value="printed_ocr">
+                  {ne ? "छापिएको लेबल — छिटो" : "Printed label — fast"}
+                </option>
+                <option value="vision">
+                  {ne
+                    ? "दृश्य पढाइ — ढिलो हुन सक्छ"
+                    : "Visual reading — may take longer"}
+                </option>
+              </select>
+            </label>
+          )}
           <p>
             {processingLocation === "device"
               ? ne
@@ -463,46 +492,66 @@ export function MedicineView({
       )}
       {recorder.error && <p role="alert">{recorder.error}</p>}
       {localOcr.error && <p role="alert">{localOcr.error}</p>}
-      {labelText && (
-        <div className="notice notice-info">
-          <label htmlFor="medicine-label-review">
-            {ne
-              ? "मात्रा र एकाइसहित पूरा लेबल जाँच्नुहोस्"
-              : "Review the complete label, including strengths and units"}
-          </label>
-          <textarea
-            id="medicine-label-review"
-            value={labelText}
-            maxLength={8000}
-            disabled={conversation.loading}
-            onChange={(event) => {
-              setLabelText(event.target.value);
-              setLabelChecked(false);
-              setActiveMedicine(null);
-            }}
-          />
-          <label>
-            <input
-              type="checkbox"
-              checked={labelChecked}
-              onChange={(event) => setLabelChecked(event.target.checked)}
-            />{" "}
-            {ne
-              ? "मैले यो पाठ प्याकेटसँग जाँचेँ"
-              : "I checked this label against the package"}
-          </label>
-          <button
-            type="button"
-            className="btn"
-            disabled={!labelChecked || conversation.loading}
-            onClick={() => void handleReviewLabel()}
-          >
-            {ne
-              ? "जाँचिएको लेबलसँग मिल्ने औषधि खोज्नुहोस्"
-              : "Find matches for reviewed label"}
-          </button>
-        </div>
+      {readingPhoto && (
+        <p role="status">
+          {processingLocation === "device"
+            ? `Reading label on this device… ${localOcr.progress}%`
+            : photoMethod === "printed_ocr"
+              ? "Reading printed label…"
+              : "Reading with the visual model. This may take up to 3 minutes…"}
+        </p>
       )}
+      {readingPhoto && processingLocation === "device" && (
+        <button type="button" onClick={() => localOcr.reset()}>
+          {ne ? "रोक्नुहोस्" : "Cancel reading"}
+        </button>
+      )}
+      <div className="notice notice-info">
+        <label htmlFor="medicine-label-review">
+          {ne
+            ? "मात्रा र एकाइसहित पूरा लेबल जाँच्नुहोस्"
+            : "Review the complete label, including strengths and units"}
+        </label>
+        <textarea
+          id="medicine-label-review"
+          value={labelText}
+          placeholder={
+            ne ? "लेबलको पाठ यहाँ लेख्नुहोस्" : "Read a photo or type the label here"
+          }
+          maxLength={8000}
+          disabled={conversation.loading}
+          onChange={(event) => {
+            setLabelText(event.target.value);
+            setLabelChecked(false);
+            setActiveMedicine(null);
+          }}
+        />
+        <label>
+          <input
+            type="checkbox"
+            checked={labelChecked}
+            onChange={(event) => setLabelChecked(event.target.checked)}
+          />{" "}
+          {ne
+            ? "मैले यो पाठ प्याकेटसँग जाँचेँ"
+            : "I checked this label against the package"}
+        </label>
+        <button
+          type="button"
+          className="btn"
+          disabled={
+            !labelText.trim() ||
+            !labelChecked ||
+            conversation.loading ||
+            readingPhoto
+          }
+          onClick={() => void handleReviewLabel()}
+        >
+          {ne
+            ? "जाँचिएको लेबलसँग मिल्ने औषधि खोज्नुहोस्"
+            : "Find matches for reviewed label"}
+        </button>
+      </div>
       {answerSpeech.error && <p role="alert">{answerSpeech.error}</p>}
       {answerSpeech.busy && <p role="status">Preparing Nepali speech…</p>}
 
@@ -522,21 +571,6 @@ export function MedicineView({
           </button>
         </div>
       )}
-
-      {/* Mandatory Clinical Safety Warning Banner */}
-      <div className="medicine-warning-banner" role="alert">
-        <span className="warning-icon" aria-hidden="true">
-          ⚠️
-        </span>
-        <div>
-          <strong>
-            {ne
-              ? "सम्भावित मिलान — पहिचान पुष्टि भएको छैन"
-              : "Possible matches — identity needs checking"}
-          </strong>
-          <p>{text.medicineWarning}</p>
-        </div>
-      </div>
 
       {/* Photo Capture & Upload Row */}
       <div className="medicine-photo-actions-row">
@@ -648,6 +682,21 @@ export function MedicineView({
         matches are unverified and require pharmacist confirmation.
       </p>
 
+      {/* Mandatory Clinical Safety Warning Banner */}
+      <div className="medicine-warning-banner" role="alert">
+        <span className="warning-icon" aria-hidden="true">
+          ⚠️
+        </span>
+        <div>
+          <strong>
+            {ne
+              ? "सम्भावित मिलान — पहिचान पुष्टि भएको छैन"
+              : "Possible matches — identity needs checking"}
+          </strong>
+          <p>{text.medicineWarning}</p>
+        </div>
+      </div>
+
       {error && (
         <div className="error-alert" role="alert">
           {error}
@@ -661,9 +710,9 @@ export function MedicineView({
             <div className="no-candidates-card">
               <h3>{text.noMedicineFound}</h3>
               <p>
-                No approved medicine matched &quot;{query}&quot;. Try searching
-                by its generic active ingredient, or verify with a licensed
-                pharmacist.
+                No match was found in the reviewed medicine catalog for &quot;
+                {query || labelText}&quot;. The catalog may not yet include this
+                medicine. Check the name with a licensed pharmacist.
               </p>
               <div className="no-candidates-actions">
                 {onBackToImage && initialQuery && (

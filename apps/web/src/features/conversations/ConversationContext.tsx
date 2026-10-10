@@ -363,7 +363,13 @@ export function ConversationProvider({ children }: { children: ReactNode }) {
       }
       if (job.status !== "completed")
         throw new Error(
-          job.error_code ||
+          (job.error_code === "image_no_readable_text"
+            ? "No readable text found. Try a clearer photo, another reading method, or type the label."
+            : job.error_code === "image_reader_unavailable"
+              ? "Printed label reading is unavailable on this server. Try reading on your device, visual reading, or type the label."
+              : job.error_code === "image_reader_timeout"
+                ? "Label reading timed out. Try a smaller, clearer photo or type the label."
+                : job.error_code) ||
             "Recognition failed. Retake the photo or paste the wording.",
         );
       entry.snapshot = await conversationRequest<Conversation>(

@@ -12,6 +12,8 @@ import { useSession } from "@/context/SessionContext";
 import { useConversation } from "@/features/conversations/ConversationContext";
 import { useAnswerSpeech } from "@/features/conversations/use-answer-speech";
 import { useDraft } from "@/features/conversations/use-draft";
+import { DocumentMedicines } from "@/features/documents/DocumentMedicines";
+import { DocumentSpeech } from "@/features/documents/DocumentSpeech";
 import { useLocalOcr } from "@/features/documents/hooks/use-local-ocr";
 import {
   admissibleDocument,
@@ -22,6 +24,7 @@ import {
   prepareImage,
   validateImageFile,
 } from "@/features/documents/lib/image-file";
+import { medicineNames } from "@/features/documents/lib/medicine-names";
 import { useHistory } from "@/features/history/HistoryContext";
 import { turnUserMessageId } from "@/features/history/turn-message-id";
 import type { ProcessingLocation } from "@/features/settings/device-specs";
@@ -494,24 +497,12 @@ export function TranscriptionView({
   return (
     <section
       className="transcription-workspace"
-      aria-labelledby="transcription-title"
+      aria-labelledby="workspace-title"
     >
       {localOcr.error && <p role="alert">{localOcr.error}</p>}
       {recorder.error && <p role="alert">{recorder.error}</p>}
       {answerSpeech.error && <p role="alert">{answerSpeech.error}</p>}
       {answerSpeech.busy && <p role="status">Preparing Nepali speech…</p>}
-      <header className="workspace-heading">
-        <h1 id="transcription-title">
-          {ne
-            ? "प्रेस्क्रिप्सन र रिपोर्ट उतार"
-            : "Prescription & report transcription"}
-        </h1>
-        <p>
-          {ne
-            ? "तस्बिर खिच्नुहोस् वा पाठ पेस्ट गर्नुहोस्। उतारेको पाठ जाँचेर सरल भाषामा व्याख्या र थप प्रश्न सोध्नुहोस्।"
-            : "Capture or paste a document. Check the wording, then discuss it."}
-        </p>
-      </header>
 
       <p className="storage-note" role="status">
         {conversation.error ||
@@ -609,32 +600,6 @@ export function TranscriptionView({
           </option>
         </select>
       </details>
-      {file && (
-        <div className="recognition-action">
-          <p>
-            {processingLocation === "device"
-              ? ne
-                ? "तस्बिर यस उपकरणमा मात्र पढिन्छ। छापिएको पाठका लागि उपयुक्त।"
-                : "Read on this device only. Suitable for printed text."
-              : ne
-                ? "पढ्न अनुमति दिएपछि यो तस्बिर सर्भरमा पठाइन्छ।"
-                : "Allow reading to send this image to the processing server."}
-          </p>
-          <button
-            type="button"
-            disabled={busy}
-            onClick={() => {
-              if (processingLocation === "device")
-                void prepareImage(file, rotation)
-                  .then((image) => localOcr.read(image, "eng+nep"))
-                  .catch((error) => setFileError(String(error)));
-              else void startServerRecognition(file, rotation);
-            }}
-          >
-            {ne ? "अनुमति दिनुहोस् र तस्बिर पढ्नुहोस्" : "Allow and read image"}
-          </button>
-        </div>
-      )}
       {pdfNotice && (
         <div className="notice notice-warning" role="alert">
           <p>{pdfNotice}</p>
@@ -642,7 +607,9 @@ export function TranscriptionView({
       )}
 
       {/* Main Two-Column Stage */}
-      <div className="transcription-grid">
+      <div
+        className={`transcription-grid ${draftText.trim() || busy ? "has-review" : "capture-only"}`}
+      >
         {/* Left Column: Image Capture / Original Text */}
         <section
           className="transcription-source-panel"
@@ -655,20 +622,22 @@ export function TranscriptionView({
           {inputMode === "image" ? (
             <div className="image-capture-stage">
               {preview ? (
-                <div className="preview-container">
-                  <div
-                    className="preview-wrapper"
-                    style={{
-                      transform: `scale(${zoom})`,
-                      transformOrigin: "top left",
-                    }}
-                  >
-                    {/* biome-ignore lint/performance/noImgElement: Blob preview must stay in browser */}
-                    <img
-                      ref={photoRef}
-                      src={preview}
-                      alt="Uploaded prescription or report"
-                    />
+                <>
+                  <div className="preview-container">
+                    <div
+                      className="preview-wrapper"
+                      style={{
+                        transform: `scale(${zoom})`,
+                        transformOrigin: "top left",
+                      }}
+                    >
+                      {/* biome-ignore lint/performance/noImgElement: Blob preview must stay in browser */}
+                      <img
+                        ref={photoRef}
+                        src={preview}
+                        alt="Uploaded prescription or report"
+                      />
+                    </div>
                   </div>
                   <div className="preview-controls-overlay">
                     <button
@@ -709,7 +678,7 @@ export function TranscriptionView({
                       {ne ? "हटाउनुहोस्" : "Remove"}
                     </button>
                   </div>
-                </div>
+                </>
               ) : (
                 <div className="dropzone-box">
                   <WorkspaceIcon name="image" size={48} />
@@ -765,6 +734,7 @@ export function TranscriptionView({
           ) : (
             <div className="text-paste-stage">
               <textarea
+                aria-label={ne ? "कागजातको पाठ" : "Document text"}
                 className="document-textarea"
                 rows={12}
                 maxLength={8000}
@@ -788,16 +758,51 @@ export function TranscriptionView({
             </div>
           )}
 
+          {file && (
+            <div className="recognition-action">
+              <p>
+                {processingLocation === "device"
+                  ? ne
+                    ? "तस्बिर यस उपकरणमा मात्र पढिन्छ। छापिएको पाठका लागि उपयुक्त।"
+                    : "Read on this device only. Suitable for printed text."
+                  : ne
+                    ? "पढ्न अनुमति दिएपछि यो तस्बिर सर्भरमा पठाइन्छ।"
+                    : "Allow reading to send this image to the processing server."}
+              </p>
+              <button
+                className="btn btn-primary"
+                type="button"
+                disabled={busy}
+                onClick={() => {
+                  if (processingLocation === "device")
+                    void prepareImage(file, rotation)
+                      .then((image) => localOcr.read(image, "eng+nep"))
+                      .catch((error) => setFileError(String(error)));
+                  else void startServerRecognition(file, rotation);
+                }}
+              >
+                {ne ? "अनुमति दिनुहोस् र तस्बिर पढ्नुहोस्" : "Allow and read image"}
+              </button>
+            </div>
+          )}
+
           {/* Document metadata controls */}
           <div className="document-type-controls">
-            <label>
+            <label htmlFor="document-kind">
               <span>{ne ? "कागजातको प्रकार:" : "Document kind:"}</span>
               <select
+                id="document-kind"
                 value={docKind}
-                onChange={(e) => setDocKind(e.target.value as typeof docKind)}
+                onChange={(e) => {
+                  setDocKind(e.target.value as typeof docKind);
+                  setExplanationResult(null);
+                  answerSpeech.stop();
+                }}
                 disabled={busy}
               >
-                <option value="prescription">Prescription / प्रेस्क्रिप्सन</option>
+                <option value="prescription">
+                  {ne ? "प्रेस्क्रिप्सन" : "Prescription"}
+                </option>
                 <option value="doctor_note">
                   {ne ? "चिकित्सकको नोट" : "Doctor’s note"}
                 </option>
@@ -806,9 +811,10 @@ export function TranscriptionView({
                 </option>
               </select>
             </label>
-            <label>
+            <label htmlFor="document-explanation-language">
               <span>{ne ? "व्याख्या भाषा:" : "Language:"}</span>
               <select
+                id="document-explanation-language"
                 value={explainLanguage}
                 onChange={(e) =>
                   setExplainLanguage(e.target.value as typeof explainLanguage)
@@ -921,6 +927,8 @@ export function TranscriptionView({
                     <p>{explanationResult.notice}</p>
                   </div>
                 )}
+
+                <DocumentSpeech result={explanationResult} ne={ne} />
 
                 <div className="guide-items-list">
                   {explanationResult.items.map((item) => (
@@ -1089,6 +1097,17 @@ export function TranscriptionView({
           </section>
         )}
       </div>
+      {transcriptionChecked && validText && (
+        <DocumentMedicines
+          ne={ne}
+          names={medicineNames(
+            draftText,
+            explanationResult?.items
+              .filter((item) => item.kind === "medicine")
+              .map((item) => item.quote),
+          )}
+        />
+      )}
       {snapshot?.turns?.map((turn) => (
         <article className="notice notice-info" key={turn.id}>
           <small>
